@@ -1,0 +1,55 @@
+[
+    {
+        "id": "101",
+        "title": "Mekan Detay Sayfası",
+        "description": "Standart mekan görünümü (Başlık, Puan, Açıklama)",
+        "isActive": true,
+        "dbId": "1",
+        "fields": [
+            {
+                "id": "pd1",
+                "label": "Başlık",
+                "dbFieldId": "f1"
+            },
+            {
+                "id": "pd2",
+                "label": "Açıklama",
+                "dbFieldId": "f2"
+            },
+            {
+                "id": "pd3",
+                "label": "Puan",
+                "dbFieldId": "f3"
+            },
+            {
+                "id": "pd4",
+                "label": "Adres",
+                "dbFieldId": "f5"
+            }
+        ]
+    },
+    {
+        "id": "102",
+        "title": "Etkinlik Detay Sayfası",
+        "description": "Tarih ve bilet bilgisi içeren görünüm",
+        "isActive": true,
+        "dbId": "2",
+        "fields": [
+            {
+                "id": "pd5",
+                "label": "Etkinlik Adı",
+                "dbFieldId": "e1"
+            },
+            {
+                "id": "pd6",
+                "label": "Tarih",
+                "dbFieldId": "e2"
+            },
+            {
+                "id": "pd7",
+                "label": "Ücret",
+                "dbFieldId": "e3"
+            }
+        ]
+    }
+]

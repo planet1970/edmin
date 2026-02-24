@@ -1,0 +1,286 @@
+[
+    {
+        "id": "1",
+        "title": "Mekanlar DB",
+        "description": "Şehir rehberindeki mekanların ana tablosu",
+        "fields": [
+            {
+                "id": "f1",
+                "name": "Başlık",
+                "key": "title",
+                "type": "text"
+            },
+            {
+                "id": "f2",
+                "name": "Slug",
+                "key": "slug",
+                "type": "text"
+            },
+            {
+                "id": "f3",
+                "name": "Resim",
+                "key": "pic_url",
+                "type": "text"
+            },
+            {
+                "id": "f4",
+                "name": "Kart1-İkon",
+                "key": "icon1",
+                "type": "text"
+            },
+            {
+                "id": "f5",
+                "name": "Kart1-Başlık",
+                "key": "title1",
+                "type": "text"
+            },
+            {
+                "id": "f6",
+                "name": "Kart1-Info",
+                "key": "info1",
+                "type": "text"
+            },
+            {
+                "id": "f7",
+                "name": "Kart2-İkon",
+                "key": "icon2",
+                "type": "text"
+            },
+            {
+                "id": "f8",
+                "name": "Kart2-Başlık",
+                "key": "title2",
+                "type": "text"
+            },
+            {
+                "id": "f9",
+                "name": "Kart2-Info",
+                "key": "info2",
+                "type": "text"
+            },
+            {
+                "id": "f10",
+                "name": "Kart3-İkon",
+                "key": "icon3",
+                "type": "text"
+            },
+            {
+                "id": "f11",
+                "name": "Kart3-Başlık",
+                "key": "title3",
+                "type": "text"
+            },
+            {
+                "id": "f12",
+                "name": "Kart3-Info",
+                "key": "info3",
+                "type": "text"
+            },
+            {
+                "id": "f13",
+                "name": "Kart4-İkon",
+                "key": "icon4",
+                "type": "text"
+            },
+            {
+                "id": "f14",
+                "name": "Kart4-Başlık",
+                "key": "title4",
+                "type": "text"
+            },
+            {
+                "id": "f15",
+                "name": "Kart4-Info",
+                "key": "info4",
+                "type": "text"
+            },
+            {
+                "id": "f16",
+                "name": "Ön Sayfa",
+                "key": "description",
+                "type": "long-text"
+            },
+            {
+                "id": "f17",
+                "name": "Puan",
+                "key": "rating",
+                "type": "number"
+            },
+            {
+                "id": "f18",
+                "name": "Panel1-Başlık",
+                "key": "panel1_title",
+                "type": "text"
+            },
+            {
+                "id": "f19",
+                "name": "Panel-1",
+                "key": "panel1",
+                "type": "text"
+            },
+            {
+                "id": "f20",
+                "name": "Panel2-Başlık",
+                "key": "panel2_title",
+                "type": "text"
+            },
+            {
+                "id": "f21",
+                "name": "Panel-2",
+                "key": "panel2",
+                "type": "text"
+            },
+            {
+                "id": "f22",
+                "name": "Panel Özel Başlık",
+                "key": "panel_col_title",
+                "type": "text"
+            },
+            {
+                "id": "f23",
+                "name": "Panel Özel",
+                "key": "panel_col",
+                "type": "text"
+            },
+            {
+                "id": "f24",
+                "name": "Panel3-Başlık",
+                "key": "panel3_title",
+                "type": "text"
+            },
+            {
+                "id": "f25",
+                "name": "Panel-3",
+                "key": "panel3",
+                "type": "text"
+            },
+            {
+                "id": "f26",
+                "name": "Panel4-Başlık",
+                "key": "panel4_title",
+                "type": "text"
+            },
+            {
+                "id": "f27",
+                "name": "Panel-4",
+                "key": "panel4",
+                "type": "text"
+            },
+            {
+                "id": "f28",
+                "name": "Panel Özel2 Başlık",
+                "key": "panel_col_title2",
+                "type": "text"
+            },
+            {
+                "id": "f29",
+                "name": "Panel Özel2",
+                "key": "panel_col2",
+                "type": "text"
+            },
+            {
+                "id": "f30",
+                "name": "Panel5-Başlık",
+                "key": "panel5_title",
+                "type": "text"
+            },
+            {
+                "id": "f31",
+                "name": "Panel-5",
+                "key": "panel5",
+                "type": "text"
+            },
+            {
+                "id": "f32",
+                "name": "Ek Alan1",
+                "key": "area1",
+                "type": "text"
+            },
+            {
+                "id": "f33",
+                "name": "Ek Alan2",
+                "key": "area2",
+                "type": "text"
+            },
+            {
+                "id": "f34",
+                "name": "Ek Alan3",
+                "key": "area3",
+                "type": "text"
+            },
+            {
+                "id": "f35",
+                "name": "Ek Alan4",
+                "key": "area4",
+                "type": "text"
+            },
+            {
+                "id": "f36",
+                "name": "Ek Alan5",
+                "key": "area5",
+                "type": "text"
+            },
+            {
+                "id": "f37",
+                "name": "Ek Alan6",
+                "key": "area6",
+                "type": "text"
+            },
+            {
+                "id": "f38",
+                "name": "Ek Alan7",
+                "key": "area7",
+                "type": "text"
+            },
+            {
+                "id": "f39",
+                "name": "Ek Alan8",
+                "key": "area8",
+                "type": "text"
+            },
+            {
+                "id": "f40",
+                "name": "Ek Alan9",
+                "key": "area9",
+                "type": "text"
+            },
+            {
+                "id": "f41",
+                "name": "Ek Alan10",
+                "key": "area10",
+                "type": "text"
+            },
+            {
+                "id": "f42",
+                "name": "Kaynak",
+                "key": "source",
+                "type": "text"
+            }
+        ]
+    },
+    {
+        "id": "2",
+        "title": "Etkinlikler DB",
+        "description": "Konserler ve festivaller",
+        "fields": [
+            {
+                "id": "e1",
+                "name": "Etkinlik Adı",
+                "key": "event_name",
+                "type": "text"
+            },
+            {
+                "id": "e2",
+                "name": "Tarih",
+                "key": "event_date",
+                "type": "date"
+            },
+            {
+                "id": "e3",
+                "name": "Bilet Fiyatı",
+                "key": "price",
+                "type": "number"
+            }
+        ]
+    }
+]
