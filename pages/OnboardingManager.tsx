@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Trash2, GripVertical, Image as ImageIcon, Save } from 'lucide-react';
 import { OnboardingStep } from '../types';
 import { onboardingService } from '../services/onboarding';
-import { API_BASE_URL } from '../services/api';
+import { API_BASE_URL, getImageUrl } from '../services/api';
 import IconPicker from '../components/IconPicker';
 
 const OnboardingManager: React.FC = () => {
@@ -106,7 +106,7 @@ const OnboardingManager: React.FC = () => {
     }
   };
 
-  const displayImageUrl = previewUrl || (formData.imageUrl ? (formData.imageUrl.startsWith('http') ? formData.imageUrl : `${API_BASE_URL}${formData.imageUrl}`) : null);
+  const displayImageUrl = previewUrl || getImageUrl(formData.imageUrl);
 
   return (
     <div className="p-6">
@@ -142,7 +142,7 @@ const OnboardingManager: React.FC = () => {
                 </div>
                 <div className="w-12 h-12 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
                   {step.imageUrl ? (
-                    <img src={step.imageUrl.startsWith('http') ? step.imageUrl : `${API_BASE_URL}${step.imageUrl}`} alt="" className="w-full h-full object-cover" />
+                    <img src={getImageUrl(step.imageUrl)} alt="" className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-400"><ImageIcon size={16} /></div>
                   )}

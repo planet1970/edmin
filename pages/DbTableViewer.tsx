@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { api } from '../services/api';
+import { api, getImageUrl } from '../services/api';
 
 const DbTableViewer: React.FC = () => {
     const { tableName } = useParams<{ tableName: string }>();
@@ -60,11 +60,34 @@ const DbTableViewer: React.FC = () => {
                             <tbody className="divide-y divide-gray-100 text-sm">
                                 {tableData.map((row, rowIndex) => (
                                     <tr key={rowIndex} className="hover:bg-gray-50">
-                                        {headers.map(header => (
-                                            <td key={`${rowIndex}-${header}`} className="px-4 py-3 whitespace-nowrap">
-                                                {String(row[header])}
-                                            </td>
-                                        ))}
+                                        {headers.map(header => {
+                                            const value = row[header];
+                                            const isImageColumn = header.toLowerCase().includes('pic') ||
+                                                header.toLowerCase().includes('image') ||
+                                                header.toLowerCase().includes('logo');
+
+                                            return (
+                                                <td key={`${rowIndex}-${header}`} className="px-4 py-3 whitespace-nowrap">
+                                                    {isImageColumn && value ? (
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-10 h-10 rounded border overflow-hidden bg-gray-50 flex-shrink-0">
+                                                                <img
+                                                                    src={getImageUrl(String(value))}
+                                                                    alt=""
+                                                                    className="w-full h-full object-cover"
+                                                                    onError={(e) => {
+                                                                        (e.target as HTMLImageElement).src = 'https://via.placeholder.com/40/f1f5f9/94a3b8?text=?';
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                            <span className="text-xs text-gray-400 truncate max-w-[100px]">{String(value)}</span>
+                                                        </div>
+                                                    ) : (
+                                                        String(value ?? '-')
+                                                    )}
+                                                </td>
+                                            );
+                                        })}
                                     </tr>
                                 ))}
                             </tbody>

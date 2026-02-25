@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Edit2, Trash2, CheckCircle, XCircle, Upload, Save, GripVertical, Layers, Filter, ArrowRight, ArrowLeft } from 'lucide-react';
-import { API_BASE_URL } from '../services/api';
+import { API_BASE_URL, getImageUrl } from '../services/api';
 import { Category, SubCategory, Place, PageLink, FoodPlace } from '../types';
 import { placesService } from '../services/places';
 import { pageLinksService } from '../services/pageLinks';
@@ -278,14 +278,12 @@ const PageDesign: React.FC = () => {
 
     const imageUrlToDisplay = useMemo(() => {
         if (selectedFile) return URL.createObjectURL(selectedFile);
-        if (placeFormData.pic_url) return `${API_BASE_URL}${placeFormData.pic_url}`;
-        return '';
+        return getImageUrl(placeFormData.pic_url);
     }, [selectedFile, placeFormData.pic_url]);
 
     const backImageUrlToDisplay = useMemo(() => {
         if (selectedBackFile) return URL.createObjectURL(selectedBackFile);
-        if (placeFormData.back_pic_url) return `${API_BASE_URL}${placeFormData.back_pic_url}`;
-        return '';
+        return getImageUrl(placeFormData.back_pic_url);
     }, [selectedBackFile, placeFormData.back_pic_url]);
 
     // --- RENDER HELPERS ---
@@ -464,7 +462,7 @@ const PageDesign: React.FC = () => {
                                             <label className="block text-sm font-bold text-gray-700">Ana Sayfa Görsel</label>
                                             {(selectedFoodFile || foodFormData?.imageUrl) && (
                                                 <img
-                                                    src={selectedFoodFile ? URL.createObjectURL(selectedFoodFile) : (foodFormData?.imageUrl?.startsWith('http') ? foodFormData.imageUrl : `${API_BASE_URL}${foodFormData?.imageUrl}`)}
+                                                    src={selectedFoodFile ? URL.createObjectURL(selectedFoodFile) : getImageUrl(foodFormData?.imageUrl)}
                                                     className="w-full h-48 object-cover rounded-xl border"
                                                 />
                                             )}
@@ -477,7 +475,7 @@ const PageDesign: React.FC = () => {
                                             <label className="block text-sm font-bold text-gray-700">Devamını Oku Görsel</label>
                                             {(selectedFoodBackFile || foodFormData?.backImageUrl) && (
                                                 <img
-                                                    src={selectedFoodBackFile ? URL.createObjectURL(selectedFoodBackFile) : (foodFormData?.backImageUrl?.startsWith('http') ? foodFormData.backImageUrl : `${API_BASE_URL}${foodFormData?.backImageUrl}`)}
+                                                    src={selectedFoodBackFile ? URL.createObjectURL(selectedFoodBackFile) : getImageUrl(foodFormData?.backImageUrl)}
                                                     className="w-full h-48 object-cover rounded-xl border"
                                                 />
                                             )}
@@ -607,7 +605,7 @@ const PageDesign: React.FC = () => {
                                                         <td className="px-6 py-4 text-gray-300"><GripVertical size={18} /></td>
                                                         <td className="px-6 py-4">
                                                             <div className="flex items-center gap-3">
-                                                                {place.pic_url && <img src={`${API_BASE_URL}${place.pic_url}`} alt="" className="w-10 h-10 object-cover rounded-lg border border-gray-100" />}
+                                                                {place.pic_url && <img src={getImageUrl(place.pic_url)} alt="" className="w-10 h-10 object-cover rounded-lg border border-gray-100" />}
                                                                 <span className="font-bold text-gray-800">{place.title}</span>
                                                             </div>
                                                         </td>
@@ -632,7 +630,7 @@ const PageDesign: React.FC = () => {
                                                         <td className="px-6 py-4 text-gray-300"><GripVertical size={18} /></td>
                                                         <td className="px-6 py-4">
                                                             <div className="flex items-center gap-3">
-                                                                {food.imageUrl && <img src={food.imageUrl.startsWith('http') ? food.imageUrl : `${API_BASE_URL}${food.imageUrl}`} alt="" className="w-10 h-10 object-cover rounded-lg border border-gray-100" />}
+                                                                {food.imageUrl && <img src={getImageUrl(food.imageUrl)} alt="" className="w-10 h-10 object-cover rounded-lg border border-gray-100" />}
                                                                 <div>
                                                                     <span className="font-bold text-gray-800">{food.title}</span>
                                                                     <div className="text-[10px] text-orange-600 font-bold">YEME & İÇME</div>

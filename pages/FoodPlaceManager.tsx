@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, X, Star } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Star, ImageIcon } from 'lucide-react';
 import { foodPlacesService, FoodPlacePayload } from '../services/foodPlaces';
 import { FoodPlace } from '../types';
+import { getImageUrl } from '../services/api';
 
 interface Props {
     subCategoryId?: number;
@@ -82,27 +83,40 @@ const FoodPlaceManager: React.FC<Props> = ({ subCategoryId }) => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {places.map(place => (
-                    <div key={place.id} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between">
-                        <div>
-                            <div className="flex justify-between items-start mb-2">
-                                <h3 className="font-bold text-gray-800 text-lg">{place.title}</h3>
-                                {place.badge && (
-                                    <span className="px-2 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded">
-                                        {place.badge}
-                                    </span>
-                                )}
+                    <div key={place.id} className="bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col overflow-hidden hover:shadow-md transition-shadow">
+                        <div className="h-40 bg-gray-100 relative overflow-hidden group">
+                            {place.imageUrl ? (
+                                <img
+                                    src={getImageUrl(place.imageUrl)}
+                                    alt={place.title}
+                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                    <ImageIcon size={40} strokeWidth={1} />
+                                </div>
+                            )}
+                            {place.badge && (
+                                <div className="absolute top-3 left-3 px-2 py-1 bg-amber-500 text-white text-[10px] font-bold rounded shadow-sm">
+                                    {place.badge}
+                                </div>
+                            )}
+                        </div>
+                        <div className="p-4 flex-1">
+                            <div className="flex justify-between items-start mb-1">
+                                <h3 className="font-bold text-gray-800 text-lg leading-tight">{place.title}</h3>
                             </div>
-                            <p className="text-sm text-gray-500 mb-2">{place.subtitle}</p>
-                            <div className="flex items-center gap-1 text-sm text-yellow-600 mb-4">
+                            <p className="text-sm text-gray-500 mb-2 line-clamp-1">{place.subtitle}</p>
+                            <div className="flex items-center gap-1 text-sm text-yellow-600">
                                 <Star size={14} className="fill-yellow-500" />
-                                <span>{place.rating}</span>
+                                <span className="font-bold">{place.rating}</span>
                             </div>
                         </div>
-                        <div className="flex justify-end gap-2 border-t pt-3 border-gray-100">
-                            <button onClick={() => openEdit(place)} className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg">
+                        <div className="flex justify-end gap-2 p-3 border-t border-gray-50 bg-gray-50/50">
+                            <button onClick={() => openEdit(place)} className="p-2 text-gray-500 hover:bg-white hover:text-blue-600 rounded-lg shadow-sm border border-transparent hover:border-gray-100 transition-all">
                                 <Edit2 size={18} />
                             </button>
-                            <button onClick={() => handleDelete(place.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
+                            <button onClick={() => handleDelete(place.id)} className="p-2 text-red-500 hover:bg-white hover:text-red-600 rounded-lg shadow-sm border border-transparent hover:border-gray-100 transition-all">
                                 <Trash2 size={18} />
                             </button>
                         </div>
@@ -144,24 +158,50 @@ const FoodPlaceManager: React.FC<Props> = ({ subCategoryId }) => {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Resim URL</label>
-                                    <input
-                                        type="text"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-indigo-500"
-                                        value={formData.imageUrl || ''}
-                                        onChange={e => setFormData({ ...formData, imageUrl: e.target.value })}
-                                    />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Resim URL</label>
+                                        <input
+                                            type="text"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-indigo-500"
+                                            value={formData.imageUrl || ''}
+                                            onChange={e => setFormData({ ...formData, imageUrl: e.target.value })}
+                                            placeholder="/uploads/foods/..."
+                                        />
+                                    </div>
+                                    {formData.imageUrl && (
+                                        <div className="relative rounded-lg overflow-hidden border border-gray-200 h-32 bg-gray-50">
+                                            <img
+                                                src={getImageUrl(formData.imageUrl)}
+                                                alt="Preview"
+                                                className="w-full h-full object-cover"
+                                            />
+                                            <div className="absolute top-2 left-2 px-2 py-0.5 bg-black/50 text-white text-[10px] rounded">Önizleme</div>
+                                        </div>
+                                    )}
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Arka Resim URL</label>
-                                    <input
-                                        type="text"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-indigo-500"
-                                        value={formData.backImageUrl || ''}
-                                        onChange={e => setFormData({ ...formData, backImageUrl: e.target.value })}
-                                    />
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Arka Resim URL</label>
+                                        <input
+                                            type="text"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-indigo-500"
+                                            value={formData.backImageUrl || ''}
+                                            onChange={e => setFormData({ ...formData, backImageUrl: e.target.value })}
+                                            placeholder="/uploads/foods/..."
+                                        />
+                                    </div>
+                                    {formData.backImageUrl && (
+                                        <div className="relative rounded-lg overflow-hidden border border-gray-200 h-32 bg-gray-50">
+                                            <img
+                                                src={getImageUrl(formData.backImageUrl)}
+                                                alt="Back Preview"
+                                                className="w-full h-full object-cover"
+                                            />
+                                            <div className="absolute top-2 left-2 px-2 py-0.5 bg-black/50 text-white text-[10px] rounded">Arka Plan Önizleme</div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 

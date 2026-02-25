@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { GripVertical, Plus, Trash2, Edit2, XCircle, Upload, CheckCircle } from 'lucide-react';
-import { Category, SubCategory } from '../types';
+import { Category, SubCategory, PageLink } from '../types';
 import { categoriesService } from '../services/categories';
 import { subcategoriesService, SubCategoryPayload } from '../services/subcategories';
-import { API_BASE_URL } from '../services/api';
-import { PageLink, pageLinksService } from '../services/pageLinks';
+import { API_BASE_URL, getImageUrl } from '../services/api';
+import { pageLinksService } from '../services/pageLinks';
 
 const SubCategoryManager: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -181,10 +181,7 @@ const SubCategoryManager: React.FC = () => {
     if (selectedFile) {
       return URL.createObjectURL(selectedFile);
     }
-    if (editingItem?.imageUrl) {
-      return `${API_BASE_URL}${editingItem.imageUrl}`;
-    }
-    return '';
+    return getImageUrl(editingItem?.imageUrl);
   }, [selectedFile, editingItem?.imageUrl]);
 
   return (
@@ -412,7 +409,7 @@ const SubCategoryManager: React.FC = () => {
                         <td className="px-4 py-3">
                           <div className="w-12 h-10 bg-gray-100 rounded-lg overflow-hidden">
                             {sub.imageUrl ? (
-                              <img src={`${API_BASE_URL}${sub.imageUrl}`} alt="" className="w-full h-full object-cover" />
+                              <img src={getImageUrl(sub.imageUrl)} alt="" className="w-full h-full object-cover" />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-400">IMG</div>
                             )}

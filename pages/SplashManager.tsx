@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Save, Image as ImageIcon } from 'lucide-react';
 import { SplashConfig } from '../types';
 import { splashService } from '../services/splash';
-import { API_BASE_URL } from '../services/api';
+import { API_BASE_URL, getImageUrl } from '../services/api';
 
 const SplashManager: React.FC = () => {
   const [config, setConfig] = useState<SplashConfig>({
@@ -64,7 +64,7 @@ const SplashManager: React.FC = () => {
     }
   };
 
-  const displayImageUrl = previewUrl || (config.logoUrl ? `${API_BASE_URL}${config.logoUrl}` : null);
+  const displayImageUrl = previewUrl || getImageUrl(config.logoUrl);
 
   return (
     <div className="p-6">

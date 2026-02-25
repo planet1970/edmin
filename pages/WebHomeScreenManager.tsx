@@ -7,7 +7,7 @@ import {
 import ConfirmDialog from '../components/ConfirmDialog';
 import { HeroSlide } from '../types';
 import { webHomeService, WebHeroSlide, WebSocialInfo, WebNavbar } from '../services/web-home';
-import { API_BASE_URL } from '../services/api';
+import { API_BASE_URL, getImageUrl as getServiceImageUrl } from '../services/api';
 
 // Extended HeroSlide with optional file for upload
 interface ExtendedHeroSlide extends WebHeroSlide {
@@ -243,14 +243,7 @@ const WebHomeScreenManager: React.FC = () => {
         }
     };
 
-    const getImageUrl = (slide: ExtendedHeroSlide) => {
-        if (slide.previewUrl) return slide.previewUrl;
-        if (slide.imageUrl) {
-            if (slide.imageUrl.startsWith('http')) return slide.imageUrl;
-            return `${API_BASE_URL}${slide.imageUrl}`;
-        }
-        return null;
-    }
+
 
     if (loading && heroSlides.length === 0) {
         return <div className="p-10 flex justify-center"><Loader className="animate-spin text-primary" /></div>;
@@ -322,8 +315,8 @@ const WebHomeScreenManager: React.FC = () => {
                                     className="w-48 h-28 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden relative group border border-gray-200 cursor-pointer"
                                     onClick={() => fileInputRefs.current[slide.id]?.click()}
                                 >
-                                    {getImageUrl(slide) ? (
-                                        <img src={getImageUrl(slide)!} alt="" className="w-full h-full object-cover" />
+                                    {(slide.previewUrl || getServiceImageUrl(slide.imageUrl)) ? (
+                                        <img src={slide.previewUrl || getServiceImageUrl(slide.imageUrl)!} alt="" className="w-full h-full object-cover" />
                                     ) : (
                                         <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 gap-2">
                                             <ImageIcon size={32} />
@@ -607,7 +600,7 @@ const WebHomeScreenManager: React.FC = () => {
                                 >
                                     {(navbarLogoPreview || navbarInfo.logoUrl) ? (
                                         <img
-                                            src={navbarLogoPreview || (navbarInfo.logoUrl?.startsWith('http') ? navbarInfo.logoUrl : `${API_BASE_URL}${navbarInfo.logoUrl}`)}
+                                            src={navbarLogoPreview || getServiceImageUrl(navbarInfo.logoUrl)}
                                             className="max-w-[80%] max-h-[80%] object-contain"
                                             alt="Logo Preview"
                                         />
@@ -774,7 +767,7 @@ const WebHomeScreenManager: React.FC = () => {
                                         <div style={{ backgroundColor: navbarInfo.bgColor }} className="flex items-center gap-4 px-6 py-4 rounded-b-xl shadow-md">
                                             {(navbarLogoPreview || navbarInfo.logoUrl) && (
                                                 <img
-                                                    src={navbarLogoPreview || (navbarInfo.logoUrl?.startsWith('http') ? navbarInfo.logoUrl : `${API_BASE_URL}${navbarInfo.logoUrl}`)}
+                                                    src={navbarLogoPreview || getServiceImageUrl(navbarInfo.logoUrl)}
                                                     className="h-8 w-auto object-contain"
                                                     alt="Logo"
                                                 />

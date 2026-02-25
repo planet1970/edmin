@@ -5,6 +5,7 @@ import {
   AlertCircle, Heart
 } from 'lucide-react';
 import { HeroSlide, PopularItem } from '../types';
+import { getImageUrl } from '../services/api';
 
 const HomeScreenManager: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'hero' | 'popular'>('hero');
@@ -179,7 +180,7 @@ const HomeScreenManager: React.FC = () => {
             {heroSlides.map((slide) => (
               <div key={slide.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex gap-4">
                 <div className="w-32 h-24 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden relative group">
-                  <img src={slide.imageUrl} alt="" className="w-full h-full object-cover" />
+                  <img src={getImageUrl(slide.imageUrl)} alt="" className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-black/40 hidden group-hover:flex items-center justify-center">
                     <ImageIcon className="text-white opacity-70" />
                   </div>
@@ -236,7 +237,7 @@ const HomeScreenManager: React.FC = () => {
                   <div className="space-y-4">
                     <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200 flex items-center justify-center relative">
                       {editingPopular.imageUrl ? (
-                        <img src={editingPopular.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                        <img src={getImageUrl(editingPopular.imageUrl)} alt="Preview" className="w-full h-full object-cover" />
                       ) : (
                         <div className="text-gray-400 flex flex-col items-center">
                           <ImageIcon size={24} className="mb-1" />
@@ -365,7 +366,7 @@ const HomeScreenManager: React.FC = () => {
                           <td className="px-4 py-3 text-gray-400"><GripVertical size={16} /></td>
                           <td className="px-4 py-3">
                             <div className="w-10 h-10 bg-gray-100 rounded overflow-hidden">
-                              <img src={item.imageUrl} alt="" className="w-full h-full object-cover" />
+                              <img src={getImageUrl(item.imageUrl)} alt="" className="w-full h-full object-cover" />
                             </div>
                           </td>
                           <td className="px-4 py-3 font-medium text-gray-800">{item.title}</td>
