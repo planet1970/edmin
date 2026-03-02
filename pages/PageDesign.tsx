@@ -9,6 +9,7 @@ import { subcategoriesService } from '../services/subcategories';
 import { foodPlacesService } from '../services/foodPlaces';
 import IconPicker from '../components/IconPicker';
 import FoodPlaceForm from '../components/FoodPlaceForm';
+import { toast } from 'react-hot-toast';
 
 const initialState: Place = {
     id: '',
@@ -269,6 +270,10 @@ const PageDesign: React.FC = () => {
     };
 
     const handleAddToAds = async (item: any, type: 'story' | 'featured', sourceType: 'PLACE' | 'FOOD_PLACE') => {
+        if (!item.id) {
+            toast.error('Öğe kimliği bulunamadı, ekleme yapılamaz.');
+            return;
+        }
         try {
             setLoading(true);
             const endpoint = `/web-home/ads/${type}`;
@@ -285,7 +290,8 @@ const PageDesign: React.FC = () => {
                 sourceId: Number(item.id)
             } : {
                 title: item.title,
-                category: (categories.find(c => c.id.toString() === selectedCategoryId)?.title) || '',
+                mainCategory: (categories.find(c => c.id.toString() === selectedCategoryId)?.title) || '',
+                category: (subCategories.find(s => s.id.toString() === selectedSubCategoryId)?.title) || '',
                 imageUrl: sourceType === 'PLACE' ? item.pic_url : item.imageUrl,
                 description: item.description || '',
                 rating: item.rating || 0,
@@ -294,10 +300,10 @@ const PageDesign: React.FC = () => {
                 sourceId: Number(item.id)
             };
 
-            await (api as any).post(endpoint, payload);
-            alert(`${type === 'story' ? 'Hikayelere' : 'Öne Çıkanlara'} başarıyla eklendi!`);
+            await api.post(endpoint, payload);
+            toast.success(`${type === 'story' ? 'Hikayelere' : 'Öne Çıkanlara'} başarıyla eklendi!`);
         } catch (err: any) {
-            alert('Reklam eklenirken hata oluştu: ' + err.message);
+            toast.error('Reklam eklenirken hata oluştu: ' + err.message);
         } finally {
             setLoading(false);
         }

@@ -13,9 +13,12 @@ import {
     CheckCircle,
     Loader,
     Upload,
-    GripVertical
+    GripVertical,
+    Edit3,
+    X
 } from 'lucide-react';
 import { api, getImageUrl } from '../services/api';
+import { toast } from 'react-hot-toast';
 
 const AdsManager: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'stories' | 'featured' | 'google'>('stories');
@@ -25,13 +28,17 @@ const AdsManager: React.FC = () => {
     // --- DATA STATE ---
     const [storyAds, setStoryAds] = useState<any[]>([]);
     const [featuredAds, setFeaturedAds] = useState<any[]>([]);
-    const [googleAds, setGoogleAds] = useState<any>({ ad1: '', ad2: '', isActive1: true, isActive2: true });
+    const [googleAds, setGoogleAds] = useState<any[]>([]);
+    const [leftAd, setLeftAd] = useState<any>({ type: 'SCRIPT', scriptCode: '', imageUrl: '', linkUrl: '', isActive: true });
+    const [rightAd, setRightAd] = useState<any>({ type: 'SCRIPT', scriptCode: '', imageUrl: '', linkUrl: '', isActive: true });
 
     const [orderDirtyStories, setOrderDirtyStories] = useState(false);
     const [orderDirtyFeatured, setOrderDirtyFeatured] = useState(false);
 
-    const [showToast, setShowToast] = useState(false);
-    const [toastMessage, setToastMessage] = useState('');
+    // --- MODAL STATE ---
+    const [editingAd, setEditingAd] = useState<any>(null);
+    const [campaignText, setCampaignText] = useState('');
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     // --- FETCH DATA ---
     const fetchData = async () => {
@@ -45,6 +52,13 @@ const AdsManager: React.FC = () => {
                 const data = await api.get<any[]>('/web-home/ads/featured');
                 setFeaturedAds(data);
                 setOrderDirtyFeatured(false);
+            } else if (activeTab === 'google') {
+                const data = await api.get<any[]>('/web-home/ads/google');
+                setGoogleAds(data);
+                const left = data.find((a: any) => a.areaName === 'HOME_LEFT');
+                const right = data.find((a: any) => a.areaName === 'HOME_RIGHT');
+                if (left) setLeftAd(left);
+                if (right) setRightAd(right);
             }
         } catch (error) {
             console.error('Error fetching ads:', error);
@@ -58,14 +72,59 @@ const AdsManager: React.FC = () => {
     }, [activeTab]);
 
     // --- HANDLERS ---
+    const handleSaveGoogleAd = async (areaName: string) => {
+        const adData = areaName === 'HOME_LEFT' ? leftAd : rightAd;
+        setSaving(true);
+        try {
+            const formData = new FormData();
+            formData.append('type', adData.type);
+            formData.append('scriptCode', adData.scriptCode || '');
+            formData.append('linkUrl', adData.linkUrl || '');
+            formData.append('isActive', adData.isActive.toString());
+
+            if (adData.newFile) {
+                formData.append('file', adData.newFile);
+            }
+
+            await api.patch(`/web-home/ads/google/${areaName}`, formData);
+
+            toast.success(`${areaName === 'HOME_LEFT' ? 'Sol' : 'Sağ'} reklam alanı güncellendi.`);
+            fetchData();
+        } catch (error) {
+            toast.error('Kayıt sırasında hata oluştu.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleFileChange = (areaName: string, file: File | null) => {
+        if (areaName === 'HOME_LEFT') {
+            setLeftAd({ ...leftAd, newFile: file, imageUrl: file ? URL.createObjectURL(file) : leftAd.imageUrl });
+        } else {
+            setRightAd({ ...rightAd, newFile: file, imageUrl: file ? URL.createObjectURL(file) : rightAd.imageUrl });
+        }
+    };
+
+    const handleResetAd = async (areaName: string) => {
+        if (!window.confirm('Bu reklam alanını temizlemek istediğinize emin misiniz?')) return;
+        try {
+            await api.delete(`/web-home/ads/google/${areaName}`);
+            toast.success('Reklam alanı temizlendi.');
+            if (areaName === 'HOME_LEFT') setLeftAd({ type: 'SCRIPT', scriptCode: '', imageUrl: '', linkUrl: '', isActive: true });
+            else setRightAd({ type: 'SCRIPT', scriptCode: '', imageUrl: '', linkUrl: '', isActive: true });
+            fetchData();
+        } catch (error) {
+            toast.error('Temizleme hatası.');
+        }
+    };
+
+    // --- HANDLERS ---
     const handleSave = async () => {
         setSaving(true);
         // Implement save for Google Ads or other persistent settings if needed
         await new Promise(resolve => setTimeout(resolve, 1000));
         setSaving(false);
-        setToastMessage('Ayarlar başarıyla kaydedildi!');
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 3000);
+        toast.success('Ayarlar başarıyla kaydedildi!');
     };
 
     const handleDeleteAd = async (id: number, type: 'story' | 'featured') => {
@@ -73,11 +132,9 @@ const AdsManager: React.FC = () => {
         try {
             await api.delete(`/web-home/ads/${type}/${id}`);
             fetchData();
-            setToastMessage('Reklam başarıyla silindi.');
-            setShowToast(true);
-            setTimeout(() => setShowToast(false), 3000);
+            toast.success('Reklam başarıyla silindi.');
         } catch (error) {
-            alert('Silme sırasında hata oluştu.');
+            toast.error('Silme sırasında hata oluştu.');
         }
     };
 
@@ -128,13 +185,32 @@ const AdsManager: React.FC = () => {
             const items = type === 'story' ? storyAds : featuredAds;
             const ids = items.map(i => i.id);
             await api.post(`/web-home/ads/${type}/reorder`, ids);
-            setToastMessage('Sıralama başarıyla kaydedildi!');
-            setShowToast(true);
-            setTimeout(() => setShowToast(false), 3000);
+            toast.success('Sıralama başarıyla kaydedildi!');
             if (type === 'story') setOrderDirtyStories(false);
             else setOrderDirtyFeatured(false);
         } catch (error) {
-            alert('Sıralama kaydedilirken hata oluştu.');
+            toast.error('Sıralama kaydedilirken hata oluştu.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleOpenEditModal = (ad: any) => {
+        setEditingAd(ad);
+        setCampaignText(ad.discount || '');
+        setIsModalOpen(true);
+    };
+
+    const handleSaveCampaign = async () => {
+        if (!editingAd) return;
+        setSaving(true);
+        try {
+            await api.patch(`/web-home/ads/featured/${editingAd.id}`, { discount: campaignText });
+            toast.success('Kampanya bilgisi güncellendi.');
+            setIsModalOpen(false);
+            fetchData();
+        } catch (error) {
+            toast.error('Güncelleme sırasında bir hata oluştu.');
         } finally {
             setSaving(false);
         }
@@ -332,12 +408,25 @@ const AdsManager: React.FC = () => {
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-center gap-2 mb-1">
                                                         <span className="font-bold text-gray-800 truncate">{ad.title}</span>
-                                                        <span className="px-2 py-0.5 rounded-full bg-orange-50 text-orange-600 text-[10px] font-bold uppercase">{ad.category}</span>
+                                                        <div className="flex gap-1">
+                                                            <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 text-[9px] font-bold uppercase">{ad.mainCategory}</span>
+                                                            <span className="px-2 py-0.5 rounded-full bg-orange-50 text-orange-600 text-[9px] font-bold uppercase">{ad.category}</span>
+                                                        </div>
                                                     </div>
                                                     <p className="text-xs text-gray-500 truncate">{ad.description}</p>
                                                 </div>
 
-                                                <div className="flex items-center gap-6 px-6 border-l border-gray-50">
+                                                <div className="flex items-center gap-10 px-6 border-l border-gray-50">
+                                                    <div className="text-center">
+                                                        <div className="text-[10px] font-bold text-gray-400 uppercase mb-0.5">Sıra</div>
+                                                        <div className="font-bold text-gray-700">{ad.order}</div>
+                                                    </div>
+                                                    <div className="text-center">
+                                                        <div className="text-[10px] font-bold text-gray-400 uppercase mb-0.5">Kampanya</div>
+                                                        <div className={`px-2 py-0.5 rounded text-[10px] font-bold ${ad.discount ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-300'}`}>
+                                                            {ad.discount ? 'VAR' : 'YOK'}
+                                                        </div>
+                                                    </div>
                                                     <div className="text-center">
                                                         <div className="text-[10px] font-bold text-gray-400 uppercase mb-0.5">Puan</div>
                                                         <div className="font-bold text-yellow-600 flex items-center gap-1 justify-center">
@@ -352,9 +441,18 @@ const AdsManager: React.FC = () => {
                                                     </div>
                                                 </div>
 
-                                                <button onClick={() => handleDeleteAd(ad.id, 'featured')} className="text-gray-300 hover:text-red-500 transition-colors p-2 hover:bg-red-50 rounded-xl">
-                                                    <Trash2 size={20} />
-                                                </button>
+                                                <div className="flex items-center gap-2 border-l border-gray-50 pl-4">
+                                                    <button
+                                                        onClick={() => handleOpenEditModal(ad)}
+                                                        className="text-gray-300 hover:text-blue-500 transition-colors p-2 hover:bg-blue-50 rounded-xl"
+                                                        title="Kampanya Düzenle"
+                                                    >
+                                                        <Edit3 size={20} />
+                                                    </button>
+                                                    <button onClick={() => handleDeleteAd(ad.id, 'featured')} className="text-gray-300 hover:text-red-500 transition-colors p-2 hover:bg-red-50 rounded-xl">
+                                                        <Trash2 size={20} />
+                                                    </button>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
@@ -365,38 +463,132 @@ const AdsManager: React.FC = () => {
                         {/* --- GOOGLE REKLAM --- */}
                         {activeTab === 'google' && (
                             <div className="space-y-6 animate-in fade-in duration-500">
-                                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                                    <h3 className="text-lg font-bold text-gray-700 mb-6 flex items-center gap-2">
-                                        <Layout size={20} className="text-primary" />
-                                        Google Adsense Ayarları
-                                    </h3>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                        <div className="space-y-4">
-                                            <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                                                <div className="flex items-center justify-between mb-4">
-                                                    <h4 className="font-bold text-sm text-gray-700">Sol Reklam Alanı</h4>
-                                                    <label className="relative inline-flex items-center cursor-pointer">
-                                                        <input type="checkbox" className="sr-only peer" defaultChecked />
-                                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-success"></div>
-                                                    </label>
-                                                </div>
-                                                <textarea rows={6} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:outline-primary font-mono text-[11px] text-gray-600" placeholder="<ins class='adsbygoogle' ...></ins>" />
-                                            </div>
+                                <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
+                                    <div className="flex items-center justify-between mb-8">
+                                        <h3 className="text-xl font-bold text-gray-800 flex items-center gap-3">
+                                            <Layout size={24} className="text-primary" />
+                                            Google & Özel Reklam Alanları
+                                        </h3>
+                                        <div className="bg-blue-50 text-blue-600 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2">
+                                            <AlertCircle size={14} />
+                                            Reklam kodunuzu veya görselinizi buradan yönetebilirsiniz.
                                         </div>
+                                    </div>
 
-                                        <div className="space-y-4">
-                                            <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                                                <div className="flex items-center justify-between mb-4">
-                                                    <h4 className="font-bold text-sm text-gray-700">Sağ Reklam Alanı</h4>
-                                                    <label className="relative inline-flex items-center cursor-pointer">
-                                                        <input type="checkbox" className="sr-only peer" defaultChecked />
-                                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-success"></div>
-                                                    </label>
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                                        {/* LEFT AD AREA */}
+                                        {[
+                                            { id: 'HOME_LEFT', name: 'Sol Reklam Alanı', state: leftAd, setState: setLeftAd },
+                                            { id: 'HOME_RIGHT', name: 'Sağ Reklam Alanı', state: rightAd, setState: setRightAd }
+                                        ].map((area) => (
+                                            <div key={area.id} className="p-6 bg-gray-50/50 rounded-3xl border border-gray-100 space-y-6">
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <h4 className="font-bold text-gray-800">{area.name}</h4>
+                                                        <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wider">Alt Sidebar veya Sayfa Yanı</p>
+                                                    </div>
+                                                    <div className="flex items-center gap-3">
+                                                        <button
+                                                            onClick={() => handleResetAd(area.id)}
+                                                            className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                                                            title="Alanı Temizle"
+                                                        >
+                                                            <Trash2 size={18} />
+                                                        </button>
+                                                        <label className="relative inline-flex items-center cursor-pointer">
+                                                            <input
+                                                                type="checkbox"
+                                                                className="sr-only peer"
+                                                                checked={area.state.isActive}
+                                                                onChange={(e) => area.setState({ ...area.state, isActive: e.target.checked })}
+                                                            />
+                                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-success"></div>
+                                                        </label>
+                                                    </div>
                                                 </div>
-                                                <textarea rows={6} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:outline-primary font-mono text-[11px] text-gray-600" placeholder="<ins class='adsbygoogle' ...></ins>" />
+
+                                                <div className="flex bg-white p-1 rounded-xl border border-gray-100">
+                                                    <button
+                                                        onClick={() => area.setState({ ...area.state, type: 'SCRIPT' })}
+                                                        className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${area.state.type === 'SCRIPT' ? 'bg-primary text-white shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
+                                                    >
+                                                        Google Script
+                                                    </button>
+                                                    <button
+                                                        onClick={() => area.setState({ ...area.state, type: 'IMAGE' })}
+                                                        className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${area.state.type === 'IMAGE' ? 'bg-primary text-white shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
+                                                    >
+                                                        Özel Görsel
+                                                    </button>
+                                                </div>
+
+                                                {area.state.type === 'SCRIPT' ? (
+                                                    <div className="space-y-2">
+                                                        <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Adsense Kod Bloğu</label>
+                                                        <textarea
+                                                            rows={8}
+                                                            value={area.state.scriptCode || ''}
+                                                            onChange={(e) => area.setState({ ...area.state, scriptCode: e.target.value })}
+                                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-2xl focus:outline-primary font-mono text-[11px] text-gray-600 resize-none shadow-inner"
+                                                            placeholder="<ins class='adsbygoogle' ...></ins>"
+                                                        />
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-4">
+                                                        <div className="relative group">
+                                                            <div className="aspect-[2/1] w-full bg-white rounded-2xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center overflow-hidden transition-all group-hover:border-primary/50">
+                                                                {area.state.imageUrl ? (
+                                                                    <div className="w-full h-full relative">
+                                                                        <img src={getImageUrl(area.state.imageUrl)} alt="Preview" className="w-full h-full object-cover" />
+                                                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                                            <Upload className="text-white" size={32} />
+                                                                        </div>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="text-center p-6">
+                                                                        <div className="w-12 h-12 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-3">
+                                                                            <ImageIcon size={24} />
+                                                                        </div>
+                                                                        <p className="text-xs font-bold text-gray-500">Reklam Görseli Seçin</p>
+                                                                        <p className="text-[10px] text-gray-400 mt-1">Önerilen: 600x250px</p>
+                                                                    </div>
+                                                                )}
+                                                                <input
+                                                                    type="file"
+                                                                    className="absolute inset-0 opacity-0 cursor-pointer"
+                                                                    onChange={(e) => handleFileChange(area.id, e.target.files?.[0] || null)}
+                                                                />
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="space-y-2">
+                                                            <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Yönlendirme Linki</label>
+                                                            <div className="relative">
+                                                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                                                                    <ExternalLink size={14} />
+                                                                </div>
+                                                                <input
+                                                                    type="text"
+                                                                    value={area.state.linkUrl || ''}
+                                                                    onChange={(e) => area.setState({ ...area.state, linkUrl: e.target.value })}
+                                                                    placeholder="https://example.com"
+                                                                    className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-primary text-xs font-medium"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                <button
+                                                    onClick={() => handleSaveGoogleAd(area.id)}
+                                                    disabled={saving}
+                                                    className="w-full py-3 bg-gray-900 text-white font-bold rounded-2xl hover:bg-black transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+                                                >
+                                                    {saving ? <Loader size={18} className="animate-spin" /> : <Save size={18} />}
+                                                    Bu Alanı Güncelle
+                                                </button>
                                             </div>
-                                        </div>
+                                        ))}
                                     </div>
                                 </div>
                             </div>
@@ -405,13 +597,56 @@ const AdsManager: React.FC = () => {
                 )}
             </div>
 
-            {/* TOAST NOTIFICATION */}
-            {showToast && (
-                <div className="fixed bottom-10 right-10 bg-gray-900 text-white px-8 py-4 rounded-2xl shadow-2xl animate-in slide-in-from-right-10 fade-in duration-300 z-[100] flex items-center gap-4">
-                    <div className="bg-success/20 p-2 rounded-full">
-                        <CheckCircle size={20} className="text-success" />
+            {/* --- KAMPANYA MODAL --- */}
+            {isModalOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in duration-300">
+                        <div className="bg-primary p-6 text-white flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                                    <Megaphone size={20} />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold">Kampanya Düzenle</h3>
+                                    <p className="text-[10px] text-white/70 uppercase font-bold tracking-wider">{editingAd?.title}</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setIsModalOpen(false)} className="hover:bg-white/10 p-2 rounded-full transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="p-8">
+                            <label className="block text-sm font-bold text-gray-700 mb-2">Kampanya Metni</label>
+                            <textarea
+                                value={campaignText}
+                                onChange={(e) => setCampaignText(e.target.value)}
+                                placeholder="Örn: %20 İndirim Fırsatı!"
+                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-primary/10 transition-all font-medium text-gray-700 resize-none"
+                                rows={4}
+                            />
+                            <p className="mt-3 text-[11px] text-gray-400 font-medium leading-relaxed">
+                                Buraya yazılacak metin, web sitesindeki mekan kartında yeşil bir kutu içinde kampanya olarak görünecektir.
+                            </p>
+
+                            <div className="mt-8 flex gap-3">
+                                <button
+                                    onClick={() => setIsModalOpen(false)}
+                                    className="flex-1 px-6 py-3 bg-gray-100 text-gray-600 font-bold rounded-2xl hover:bg-gray-200 transition-all"
+                                >
+                                    İptal
+                                </button>
+                                <button
+                                    onClick={handleSaveCampaign}
+                                    disabled={saving}
+                                    className="flex-[2] px-6 py-3 bg-primary text-white font-bold rounded-2xl hover:bg-orange-600 transition-all shadow-lg shadow-orange-900/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                                >
+                                    {saving ? <Loader size={18} className="animate-spin" /> : <CheckCircle size={18} />}
+                                    Kaydet
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <span className="font-bold">{toastMessage}</span>
                 </div>
             )}
         </div>

@@ -21,6 +21,7 @@ import { AuthProvider } from './context/AuthContext';
 import DbTableViewer from './pages/DbTableViewer';
 import PageDesign from './pages/PageDesign';
 import PageLinkManager from './pages/PageLinkManager';
+import { Toaster } from 'react-hot-toast';
 // import HistoricalPlaceList from './pages/HistoricalPlaceList'; // Removed as integrated into HistoricalPlace
 
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -38,6 +39,7 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 const App: React.FC = () => {
     return (
         <AuthProvider>
+            <Toaster position="top-right" />
             <HashRouter>
                 <Routes>
                     <Route path="/login" element={<Login />} />
