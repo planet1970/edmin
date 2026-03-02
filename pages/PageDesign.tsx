@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Edit2, Trash2, CheckCircle, XCircle, Upload, Save, GripVertical, Layers, Filter, ArrowRight, ArrowLeft } from 'lucide-react';
-import { API_BASE_URL, getImageUrl } from '../services/api';
+import { Plus, Edit2, Trash2, CheckCircle, XCircle, Upload, Save, GripVertical, Layers, Filter, ArrowRight, ArrowLeft, Megaphone, Star, Check } from 'lucide-react';
+import { API_BASE_URL, getImageUrl, api } from '../services/api';
 import { Category, SubCategory, Place, PageLink, FoodPlace } from '../types';
 import { placesService } from '../services/places';
 import { pageLinksService } from '../services/pageLinks';
@@ -265,6 +265,37 @@ const PageDesign: React.FC = () => {
             loadContent();
         } catch (err: any) {
             setError(err?.message || 'Durum güncellenemedi');
+        }
+    };
+
+    const handleAddToAds = async (item: any, type: 'story' | 'featured', sourceType: 'PLACE' | 'FOOD_PLACE') => {
+        try {
+            setLoading(true);
+            const endpoint = `/web-home/ads/${type}`;
+            const payload = type === 'story' ? {
+                title: item.title,
+                imageUrl: sourceType === 'PLACE' ? item.pic_url : item.imageUrl,
+                link: `/place/${item.slug}`,
+                isNew: true,
+                sourceType,
+                sourceId: Number(item.id)
+            } : {
+                title: item.title,
+                category: (categories.find(c => c.id.toString() === selectedCategoryId)?.title) || '',
+                imageUrl: sourceType === 'PLACE' ? item.pic_url : item.imageUrl,
+                description: item.description || '',
+                rating: item.rating || 0,
+                link: `/place/${item.slug}`,
+                sourceType,
+                sourceId: Number(item.id)
+            };
+
+            await (api as any).post(endpoint, payload);
+            alert(`${type === 'story' ? 'Hikayelere' : 'Öne Çıkanlara'} başarıyla eklendi!`);
+        } catch (err: any) {
+            alert('Reklam eklenirken hata oluştu: ' + err.message);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -618,6 +649,9 @@ const PageDesign: React.FC = () => {
                                                         </td>
                                                         <td className="px-6 py-4 text-right">
                                                             <div className="flex justify-end gap-2">
+                                                                <button title="Hikayelere Ekle" onClick={() => handleAddToAds(place, 'story', 'PLACE')} className="p-2 text-orange-500 hover:bg-orange-50 rounded-lg transition-colors"><Megaphone size={18} /></button>
+                                                                <button title="Öne Çıkanlara Ekle" onClick={() => handleAddToAds(place, 'featured', 'PLACE')} className="p-2 text-yellow-500 hover:bg-yellow-50 rounded-lg transition-colors"><Star size={18} /></button>
+                                                                <div className="w-px h-8 bg-gray-100 mx-1"></div>
                                                                 <button onClick={() => handleEditPlace(place)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Edit2 size={18} /></button>
                                                                 <button onClick={() => handleDeletePlace(place.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={18} /></button>
                                                             </div>
@@ -646,6 +680,9 @@ const PageDesign: React.FC = () => {
                                                         </td>
                                                         <td className="px-6 py-4 text-right">
                                                             <div className="flex justify-end gap-2">
+                                                                <button title="Hikayelere Ekle" onClick={() => handleAddToAds(food, 'story', 'FOOD_PLACE')} className="p-2 text-orange-500 hover:bg-orange-50 rounded-lg transition-colors"><Megaphone size={18} /></button>
+                                                                <button title="Öne Çıkanlara Ekle" onClick={() => handleAddToAds(food, 'featured', 'FOOD_PLACE')} className="p-2 text-yellow-500 hover:bg-yellow-50 rounded-lg transition-colors"><Star size={18} /></button>
+                                                                <div className="w-px h-8 bg-gray-100 mx-1"></div>
                                                                 <button onClick={() => handleEditFood(food)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Edit2 size={18} /></button>
                                                                 <button onClick={() => handleDeleteFood(food.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={18} /></button>
                                                             </div>
