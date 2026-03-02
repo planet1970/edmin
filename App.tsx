@@ -14,6 +14,7 @@ import UserManager from './pages/UserManager';
 import UserTypeManager from './pages/UserTypeManager';
 import MyPagesManager from './pages/MyPagesManager';
 import Login from './pages/Login';
+import AdsManager from './pages/AdsManager';
 import SubCategoryManager from './pages/SubCategoryManager';
 import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
@@ -50,6 +51,7 @@ const App: React.FC = () => {
 
                                         <Route path="/home-screen" element={<HomeScreenManager />} />
                                         <Route path="/web-home" element={<WebHomeScreenManager />} />
+                                        <Route path="/ads" element={<AdsManager />} />
                                         <Route path="/categories" element={<CategoriesManager />} />
                                         <Route path="/sub-categories" element={<SubCategoryManager />} />
                                         <Route path="/page-content" element={<PageContentManager />} />

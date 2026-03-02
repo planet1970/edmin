@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Smartphone, Layers, Home, ListTree, FilePlus, Database, FileCode, Server, FileText, Users, UserCog, UserCheck, ChevronDown, Grid, Globe } from 'lucide-react';
+import { LayoutDashboard, Smartphone, Layers, Home, ListTree, FilePlus, Database, FileCode, Server, FileText, Users, UserCog, UserCheck, ChevronDown, Grid, Globe, Megaphone } from 'lucide-react';
 import { NavItem } from '../types';
 import { api } from '../services/api';
 
@@ -11,6 +11,7 @@ const initialMenuItems: { category: string; items: NavItem[] }[] = [
             { title: 'Özet / Dashboard', icon: LayoutDashboard, path: '/' },
             { title: 'Ana Ekran (Mobil)', icon: Home, path: '/home-screen' },
             { title: 'Ana Ekran (Web)', icon: Globe, path: '/web-home' },
+            { title: 'Reklam', icon: Megaphone, path: '/ads' },
             { title: 'Kategoriler', icon: Grid, path: '/categories' },
             { title: 'Alt Kategoriler', icon: ListTree, path: '/sub-categories' },
             { title: 'Sayfa Yetkili', icon: FileText, path: '/page-content' },
