@@ -272,10 +272,14 @@ const PageDesign: React.FC = () => {
         try {
             setLoading(true);
             const endpoint = `/web-home/ads/${type}`;
+            const detailLink = sourceType === 'PLACE'
+                ? `/detail/place/${item.id}`
+                : `/detail/food_place/${item.id}`;
+
             const payload = type === 'story' ? {
                 title: item.title,
                 imageUrl: sourceType === 'PLACE' ? item.pic_url : item.imageUrl,
-                link: `/place/${item.slug}`,
+                link: detailLink,
                 isNew: true,
                 sourceType,
                 sourceId: Number(item.id)
@@ -285,7 +289,7 @@ const PageDesign: React.FC = () => {
                 imageUrl: sourceType === 'PLACE' ? item.pic_url : item.imageUrl,
                 description: item.description || '',
                 rating: item.rating || 0,
-                link: `/place/${item.slug}`,
+                link: detailLink,
                 sourceType,
                 sourceId: Number(item.id)
             };

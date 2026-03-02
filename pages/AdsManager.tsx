@@ -12,7 +12,8 @@ import {
     AlertCircle,
     CheckCircle,
     Loader,
-    Upload
+    Upload,
+    GripVertical
 } from 'lucide-react';
 import { api, getImageUrl } from '../services/api';
 
@@ -26,6 +27,9 @@ const AdsManager: React.FC = () => {
     const [featuredAds, setFeaturedAds] = useState<any[]>([]);
     const [googleAds, setGoogleAds] = useState<any>({ ad1: '', ad2: '', isActive1: true, isActive2: true });
 
+    const [orderDirtyStories, setOrderDirtyStories] = useState(false);
+    const [orderDirtyFeatured, setOrderDirtyFeatured] = useState(false);
+
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
 
@@ -36,9 +40,11 @@ const AdsManager: React.FC = () => {
             if (activeTab === 'stories') {
                 const data = await api.get<any[]>('/web-home/ads/story');
                 setStoryAds(data);
+                setOrderDirtyStories(false);
             } else if (activeTab === 'featured') {
                 const data = await api.get<any[]>('/web-home/ads/featured');
                 setFeaturedAds(data);
+                setOrderDirtyFeatured(false);
             }
         } catch (error) {
             console.error('Error fetching ads:', error);
@@ -81,6 +87,56 @@ const AdsManager: React.FC = () => {
             fetchData();
         } catch (error) {
             alert('Güncelleme hatası.');
+        }
+    };
+
+    // --- DRAG AND DROP ---
+    const handleDragStart = (e: React.DragEvent, index: number, type: 'story' | 'featured') => {
+        e.dataTransfer.setData('type', type);
+        e.dataTransfer.setData('index', index.toString());
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+    };
+
+    const handleDrop = (e: React.DragEvent, dropIndex: number, type: 'story' | 'featured') => {
+        const dragType = e.dataTransfer.getData('type');
+        if (dragType !== type) return;
+
+        const dragIndex = parseInt(e.dataTransfer.getData('index'));
+        if (dragIndex === dropIndex) return;
+
+        if (type === 'story') {
+            const newItems = [...storyAds];
+            const [draggedItem] = newItems.splice(dragIndex, 1);
+            newItems.splice(dropIndex, 0, draggedItem);
+            setStoryAds(newItems.map((item, idx) => ({ ...item, order: idx + 1 })));
+            setOrderDirtyStories(true);
+        } else {
+            const newItems = [...featuredAds];
+            const [draggedItem] = newItems.splice(dragIndex, 1);
+            newItems.splice(dropIndex, 0, draggedItem);
+            setFeaturedAds(newItems.map((item, idx) => ({ ...item, order: idx + 1 })));
+            setOrderDirtyFeatured(true);
+        }
+    };
+
+    const handleSaveOrder = async (type: 'story' | 'featured') => {
+        try {
+            setSaving(true);
+            const items = type === 'story' ? storyAds : featuredAds;
+            const ids = items.map(i => i.id);
+            await api.post(`/web-home/ads/${type}/reorder`, ids);
+            setToastMessage('Sıralama başarıyla kaydedildi!');
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 3000);
+            if (type === 'story') setOrderDirtyStories(false);
+            else setOrderDirtyFeatured(false);
+        } catch (error) {
+            alert('Sıralama kaydedilirken hata oluştu.');
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -150,8 +206,18 @@ const AdsManager: React.FC = () => {
                         {activeTab === 'stories' && (
                             <div className="space-y-4 animate-in fade-in duration-500">
                                 <div className="flex justify-between items-center mb-4">
-                                    <h3 className="text-lg font-bold text-gray-700">Aktif Hikaye Reklamları</h3>
-                                    <p className="text-xs text-gray-400 font-medium">Sayfa Tanım ekranından mekan ekleyebilirsiniz.</p>
+                                    <div>
+                                        <h3 className="text-lg font-bold text-gray-700">Aktif Hikaye Reklamları</h3>
+                                        <p className="text-xs text-gray-400 font-medium">Sayfa Tanım ekranından mekan ekleyebilirsiniz.</p>
+                                    </div>
+                                    {orderDirtyStories && (
+                                        <button
+                                            onClick={() => handleSaveOrder('story')}
+                                            className="px-4 py-1.5 bg-success text-white text-xs font-bold rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2"
+                                        >
+                                            <Save size={14} /> Sıralamayı Kaydet
+                                        </button>
+                                    )}
                                 </div>
 
                                 {storyAds.length === 0 ? (
@@ -159,36 +225,57 @@ const AdsManager: React.FC = () => {
                                         Henüz hikaye reklamı eklenmemiş.
                                     </div>
                                 ) : (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                        {storyAds.map((ad) => (
-                                            <div key={ad.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden group hover:shadow-md transition-all">
-                                                <div className="aspect-square bg-gray-50 relative">
-                                                    {ad.imageUrl ? (
-                                                        <img src={getImageUrl(ad.imageUrl)} alt="" className="w-full h-full object-cover" />
-                                                    ) : (
-                                                        <div className="absolute inset-0 flex items-center justify-center text-gray-300">
-                                                            <ImageIcon size={40} />
-                                                        </div>
-                                                    )}
-                                                    <div className="absolute top-3 right-3">
-                                                        <label className="relative inline-flex items-center cursor-pointer">
-                                                            <input type="checkbox" className="sr-only peer" checked={ad.isActive} onChange={() => handleToggleActive(ad.id, ad.isActive, 'story')} />
-                                                            <div className="w-9 h-5 bg-gray-200/80 backdrop-blur-md peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
-                                                        </label>
+                                    <div className="space-y-3">
+                                        {storyAds.map((ad, index) => (
+                                            <div
+                                                key={ad.id}
+                                                draggable
+                                                onDragStart={(e) => handleDragStart(e, index, 'story')}
+                                                onDragOver={handleDragOver}
+                                                onDrop={(e) => handleDrop(e, index, 'story')}
+                                                className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex gap-6 items-center hover:shadow-md transition-all cursor-move group"
+                                            >
+                                                <div className="text-gray-300 group-hover:text-primary transition-colors">
+                                                    <GripVertical size={20} />
+                                                </div>
+                                                <div className="w-24 h-24 bg-gray-50 rounded-full flex-shrink-0 overflow-hidden border-4 border-primary/20 p-1">
+                                                    <div className="w-full h-full rounded-full overflow-hidden border-2 border-white">
+                                                        {ad.imageUrl ? (
+                                                            <img src={getImageUrl(ad.imageUrl)} alt="" className="w-full h-full object-cover" />
+                                                        ) : (
+                                                            <div className="w-full h-full flex items-center justify-center text-gray-200">
+                                                                <ImageIcon size={24} />
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
-                                                <div className="p-4">
-                                                    <div className="font-bold text-gray-800 truncate mb-1">{ad.title}</div>
-                                                    <div className="flex items-center gap-1.5 text-[10px] text-gray-400 font-bold uppercase mb-4">
-                                                        <ExternalLink size={10} /> {ad.link}
+
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <span className="font-bold text-gray-800 truncate">{ad.title}</span>
+                                                        {ad.isNew && <span className="px-2 py-0.5 rounded-full bg-green-50 text-green-600 text-[10px] font-bold uppercase">Yeni</span>}
                                                     </div>
-                                                    <div className="flex justify-between items-center pt-3 border-t border-gray-50">
-                                                        <span className="text-[10px] font-bold text-gray-300">#{ad.id}</span>
-                                                        <button onClick={() => handleDeleteAd(ad.id, 'story')} className="text-gray-300 hover:text-red-500 transition-colors">
-                                                            <Trash2 size={16} />
+                                                    <div className="flex items-center gap-1.5 text-xs text-info font-medium">
+                                                        <ExternalLink size={12} /> {ad.link}
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-10 px-6 border-l border-gray-50">
+                                                    <div className="text-center">
+                                                        <div className="text-[10px] font-bold text-gray-400 uppercase mb-0.5">Sıra</div>
+                                                        <div className="font-bold text-gray-700">{ad.order}</div>
+                                                    </div>
+                                                    <div className="text-center">
+                                                        <div className="text-[10px] font-bold text-gray-400 uppercase mb-0.5">Durum</div>
+                                                        <button onClick={() => handleToggleActive(ad.id, ad.isActive, 'story')} className={`px-2 py-0.5 rounded text-[10px] font-bold ${ad.isActive ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
+                                                            {ad.isActive ? 'AKTİF' : 'PASİF'}
                                                         </button>
                                                     </div>
                                                 </div>
+
+                                                <button onClick={() => handleDeleteAd(ad.id, 'story')} className="text-gray-300 hover:text-red-500 transition-colors p-2 hover:bg-red-50 rounded-xl">
+                                                    <Trash2 size={20} />
+                                                </button>
                                             </div>
                                         ))}
                                     </div>
@@ -200,8 +287,18 @@ const AdsManager: React.FC = () => {
                         {activeTab === 'featured' && (
                             <div className="space-y-4 animate-in fade-in duration-500">
                                 <div className="flex justify-between items-center mb-4">
-                                    <h3 className="text-lg font-bold text-gray-700">Öne Çıkan İşletmeler</h3>
-                                    <p className="text-xs text-gray-400 font-medium">Sayfa Tanım ekranından mekan ekleyebilirsiniz.</p>
+                                    <div>
+                                        <h3 className="text-lg font-bold text-gray-700">Öne Çıkan İşletmeler</h3>
+                                        <p className="text-xs text-gray-400 font-medium">Sayfa Tanım ekranından mekan ekleyebilirsiniz.</p>
+                                    </div>
+                                    {orderDirtyFeatured && (
+                                        <button
+                                            onClick={() => handleSaveOrder('featured')}
+                                            className="px-4 py-1.5 bg-success text-white text-xs font-bold rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2"
+                                        >
+                                            <Save size={14} /> Sıralamayı Kaydet
+                                        </button>
+                                    )}
                                 </div>
 
                                 {featuredAds.length === 0 ? (
@@ -210,8 +307,18 @@ const AdsManager: React.FC = () => {
                                     </div>
                                 ) : (
                                     <div className="space-y-3">
-                                        {featuredAds.map((ad) => (
-                                            <div key={ad.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex gap-6 items-center hover:shadow-md transition-all">
+                                        {featuredAds.map((ad, index) => (
+                                            <div
+                                                key={ad.id}
+                                                draggable
+                                                onDragStart={(e) => handleDragStart(e, index, 'featured')}
+                                                onDragOver={handleDragOver}
+                                                onDrop={(e) => handleDrop(e, index, 'featured')}
+                                                className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex gap-6 items-center hover:shadow-md transition-all cursor-move group"
+                                            >
+                                                <div className="text-gray-300 group-hover:text-primary transition-colors">
+                                                    <GripVertical size={20} />
+                                                </div>
                                                 <div className="w-32 h-20 bg-gray-50 rounded-xl flex-shrink-0 overflow-hidden border border-gray-100">
                                                     {ad.imageUrl ? (
                                                         <img src={getImageUrl(ad.imageUrl)} alt="" className="w-full h-full object-cover" />
