@@ -36,6 +36,23 @@ export interface WebNavbar {
     iconColor?: string;
 }
 
+export interface WebAboutSection {
+    id: number;
+    title?: string;
+    description?: string;
+    cards?: WebAboutCard[];
+}
+
+export interface WebAboutCard {
+    id: number;
+    icon?: string;
+    title?: string;
+    summary?: string;
+    content?: string;
+    order: number;
+    isActive: boolean;
+}
+
 export const webHomeService = {
     // Hero
     findAllHero: async () => {
@@ -70,5 +87,30 @@ export const webHomeService = {
 
     updateNavbar: async (data: FormData) => {
         return api.post<WebNavbar>('/web-home/navbar', data);
+    },
+
+    // About
+    getAboutSection: async () => {
+        return api.get<WebAboutSection>('/web-home/about');
+    },
+
+    updateAboutSection: async (data: Partial<WebAboutSection>) => {
+        return api.post<WebAboutSection>('/web-home/about', data);
+    },
+
+    createAboutCard: async (data: Partial<WebAboutCard>) => {
+        return api.post<WebAboutCard>('/web-home/about/cards', data);
+    },
+
+    updateAboutCard: async (id: number, data: Partial<WebAboutCard>) => {
+        return api.patch<WebAboutCard>(`/web-home/about/cards/${id}`, data);
+    },
+
+    removeAboutCard: async (id: number) => {
+        return api.delete(`/web-home/about/cards/${id}`);
+    },
+
+    reorderAboutCards: async (ids: number[]) => {
+        return api.post('/web-home/about/cards/reorder', ids);
     },
 };

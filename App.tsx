@@ -19,6 +19,7 @@ import SubCategoryManager from './pages/SubCategoryManager';
 import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
 import DbTableViewer from './pages/DbTableViewer';
+import WebAboutManager from './pages/WebAboutManager';
 import PageDesign from './pages/PageDesign';
 import PageLinkManager from './pages/PageLinkManager';
 import { Toaster } from 'react-hot-toast';
@@ -61,6 +62,7 @@ const App: React.FC = () => {
                                         <Route path="/page-links" element={<PageLinkManager />} />
                                         <Route path="/database-definitions" element={<DatabaseManager />} />
                                         <Route path="/splash" element={<SplashManager />} />
+                                        <Route path="/web-about" element={<WebAboutManager />} />
                                         <Route path="/database-manager/:tableName" element={<DbTableViewer />} />
                                         <Route path="/onboarding" element={<OnboardingManager />} />
                                         <Route path="/users" element={<UserManager />} />

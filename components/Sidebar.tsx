@@ -21,6 +21,7 @@ const initialMenuItems: { category: string; items: NavItem[] }[] = [
                 path: '/page-design'
             },
             { title: 'Splash Screen', icon: Layers, path: '/splash' },
+            { title: 'Ek Alan', icon: ListTree, path: '/web-about' },
             { title: 'Onboarding', icon: Smartphone, path: '/onboarding' },
         ],
     },
