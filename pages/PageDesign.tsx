@@ -269,7 +269,7 @@ const PageDesign: React.FC = () => {
         }
     };
 
-    const handleAddToAds = async (item: any, type: 'story' | 'featured', sourceType: 'PLACE' | 'FOOD_PLACE') => {
+    const handleAddToAds = async (item: any, type: 'story' | 'featured' | 'popular', sourceType: 'PLACE' | 'FOOD_PLACE') => {
         if (!item.id) {
             toast.error('Öğe kimliği bulunamadı, ekleme yapılamaz.');
             return;
@@ -281,7 +281,36 @@ const PageDesign: React.FC = () => {
                 ? `/detail/place/${item.id}`
                 : `/detail/food_place/${item.id}`;
 
-            const payload = type === 'story' ? {
+            const finalCatId = String(item.categoryId || selectedCategoryId || '');
+            const finalSubCatId = String(item.subCategoryId || selectedSubCategoryId || '');
+
+            const mainCat = categories.find(c => String(c.id) === finalCatId);
+            const subCat = subCategories.find(s => String(s.id) === finalSubCatId);
+
+            const mainCatTitle = mainCat?.title || '';
+            const subCatTitle = subCat?.title || '';
+
+            toast.success(`${item.title}: ${mainCatTitle} -> ${subCatTitle} olarak işaretleniyor`);
+
+            const payload = type === 'popular' ? {
+                title: item.title,
+                description: item.description || '',
+                imageUrl: sourceType === 'PLACE' ? item.pic_url : (item.imageUrl || ''),
+                rating: item.rating || 0,
+                visitCount: 0,
+                link: detailLink,
+                badge: sourceType === 'PLACE' ? (item.icon1 || '') : (item.badge || ''),
+                hours: sourceType === 'PLACE' ? (item.info1 || '') : (item.hoursEveryday || ''),
+                location: sourceType === 'PLACE' ? (item.area1 || 'Merkez') : (item.address || 'Şehir Geneli'),
+                icon1: sourceType === 'PLACE' ? (item.icon1 || '') : (item.badge || ''),
+                info1: sourceType === 'PLACE' ? (item.info1 || '') : (item.hoursEveryday || ''),
+                icon2: sourceType === 'PLACE' ? (item.icon2 || '') : (item.field1 || ''),
+                info2: sourceType === 'PLACE' ? (item.info2 || '') : (item.hoursMon || ''),
+                mainCategory: mainCatTitle,
+                category: subCatTitle,
+                sourceType,
+                sourceId: Number(item.id)
+            } : type === 'story' ? {
                 title: item.title,
                 imageUrl: sourceType === 'PLACE' ? item.pic_url : item.imageUrl,
                 link: detailLink,
@@ -290,8 +319,8 @@ const PageDesign: React.FC = () => {
                 sourceId: Number(item.id)
             } : {
                 title: item.title,
-                mainCategory: (categories.find(c => c.id.toString() === selectedCategoryId)?.title) || '',
-                category: (subCategories.find(s => s.id.toString() === selectedSubCategoryId)?.title) || '',
+                mainCategory: mainCatTitle,
+                category: subCatTitle,
                 imageUrl: sourceType === 'PLACE' ? item.pic_url : item.imageUrl,
                 description: item.description || '',
                 rating: item.rating || 0,
@@ -301,9 +330,11 @@ const PageDesign: React.FC = () => {
             };
 
             await api.post(endpoint, payload);
-            toast.success(`${type === 'story' ? 'Hikayelere' : 'Öne Çıkanlara'} başarıyla eklendi!`);
+            const typeLabel = { 'story': 'Hikayelere', 'featured': 'Öne Çıkanlara', 'popular': 'Popüler Mekanlara' }[type];
+            toast.success(`${typeLabel} başarıyla eklendi!`);
         } catch (err: any) {
-            toast.error('Reklam eklenirken hata oluştu: ' + err.message);
+            const errorLabel = type === 'popular' ? 'Mekan eklenirken' : 'Reklam eklenirken';
+            toast.error(`${errorLabel} hata oluştu: ${err.message}`);
         } finally {
             setLoading(false);
         }
@@ -661,6 +692,7 @@ const PageDesign: React.FC = () => {
                                                             <div className="flex justify-end gap-2">
                                                                 <button title="Hikayelere Ekle" onClick={() => handleAddToAds(place, 'story', 'PLACE')} className="p-2 text-orange-500 hover:bg-orange-50 rounded-lg transition-colors"><Megaphone size={18} /></button>
                                                                 <button title="Öne Çıkanlara Ekle" onClick={() => handleAddToAds(place, 'featured', 'PLACE')} className="p-2 text-yellow-500 hover:bg-yellow-50 rounded-lg transition-colors"><Star size={18} /></button>
+                                                                <button title="Popüler Mekanlara Ekle" onClick={() => handleAddToAds(place, 'popular', 'PLACE')} className="p-2 text-purple-500 hover:bg-purple-50 rounded-lg transition-colors"><Layers size={18} /></button>
                                                                 <div className="w-px h-8 bg-gray-100 mx-1"></div>
                                                                 <button onClick={() => handleEditPlace(place)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Edit2 size={18} /></button>
                                                                 <button onClick={() => handleDeletePlace(place.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={18} /></button>
@@ -692,6 +724,7 @@ const PageDesign: React.FC = () => {
                                                             <div className="flex justify-end gap-2">
                                                                 <button title="Hikayelere Ekle" onClick={() => handleAddToAds(food, 'story', 'FOOD_PLACE')} className="p-2 text-orange-500 hover:bg-orange-50 rounded-lg transition-colors"><Megaphone size={18} /></button>
                                                                 <button title="Öne Çıkanlara Ekle" onClick={() => handleAddToAds(food, 'featured', 'FOOD_PLACE')} className="p-2 text-yellow-500 hover:bg-yellow-50 rounded-lg transition-colors"><Star size={18} /></button>
+                                                                <button title="Popüler Mekanlara Ekle" onClick={() => handleAddToAds(food, 'popular', 'FOOD_PLACE')} className="p-2 text-purple-500 hover:bg-purple-50 rounded-lg transition-colors"><Layers size={18} /></button>
                                                                 <div className="w-px h-8 bg-gray-100 mx-1"></div>
                                                                 <button onClick={() => handleEditFood(food)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Edit2 size={18} /></button>
                                                                 <button onClick={() => handleDeleteFood(food.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={18} /></button>

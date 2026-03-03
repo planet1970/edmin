@@ -15,25 +15,28 @@ import {
     Upload,
     GripVertical,
     Edit3,
+    Layers,
     X
 } from 'lucide-react';
 import { api, getImageUrl } from '../services/api';
 import { toast } from 'react-hot-toast';
 
 const AdsManager: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'stories' | 'featured' | 'google'>('stories');
+    const [activeTab, setActiveTab] = useState<'stories' | 'featured' | 'popular' | 'google'>('stories');
     const [saving, setSaving] = useState(false);
     const [loadingData, setLoadingData] = useState(false);
 
     // --- DATA STATE ---
     const [storyAds, setStoryAds] = useState<any[]>([]);
     const [featuredAds, setFeaturedAds] = useState<any[]>([]);
+    const [popularAds, setPopularAds] = useState<any[]>([]);
     const [googleAds, setGoogleAds] = useState<any[]>([]);
     const [leftAd, setLeftAd] = useState<any>({ type: 'SCRIPT', scriptCode: '', imageUrl: '', linkUrl: '', isActive: true });
     const [rightAd, setRightAd] = useState<any>({ type: 'SCRIPT', scriptCode: '', imageUrl: '', linkUrl: '', isActive: true });
 
     const [orderDirtyStories, setOrderDirtyStories] = useState(false);
     const [orderDirtyFeatured, setOrderDirtyFeatured] = useState(false);
+    const [orderDirtyPopular, setOrderDirtyPopular] = useState(false);
 
     // --- MODAL STATE ---
     const [editingAd, setEditingAd] = useState<any>(null);
@@ -52,6 +55,10 @@ const AdsManager: React.FC = () => {
                 const data = await api.get<any[]>('/web-home/ads/featured');
                 setFeaturedAds(data);
                 setOrderDirtyFeatured(false);
+            } else if (activeTab === 'popular') {
+                const data = await api.get<any[]>('/web-home/ads/popular');
+                setPopularAds(data);
+                setOrderDirtyPopular(false);
             } else if (activeTab === 'google') {
                 const data = await api.get<any[]>('/web-home/ads/google');
                 setGoogleAds(data);
@@ -127,18 +134,19 @@ const AdsManager: React.FC = () => {
         toast.success('Ayarlar başarıyla kaydedildi!');
     };
 
-    const handleDeleteAd = async (id: number, type: 'story' | 'featured') => {
-        if (!window.confirm('Bu reklamı silmek istediğinize emin misiniz?')) return;
+    const handleDeleteAd = async (id: number, type: 'story' | 'featured' | 'popular') => {
+        const itemType = type === 'popular' ? 'mekanı' : 'reklamı';
+        if (!window.confirm(`Bu ${itemType} silmek istediğinize emin misiniz?`)) return;
         try {
             await api.delete(`/web-home/ads/${type}/${id}`);
             fetchData();
-            toast.success('Reklam başarıyla silindi.');
+            toast.success('Başarıyla silindi.');
         } catch (error) {
             toast.error('Silme sırasında hata oluştu.');
         }
     };
 
-    const handleToggleActive = async (id: number, current: boolean, type: 'story' | 'featured') => {
+    const handleToggleActive = async (id: number, current: boolean, type: 'story' | 'featured' | 'popular') => {
         try {
             await api.patch(`/web-home/ads/${type}/${id}`, { isActive: !current });
             fetchData();
@@ -148,7 +156,7 @@ const AdsManager: React.FC = () => {
     };
 
     // --- DRAG AND DROP ---
-    const handleDragStart = (e: React.DragEvent, index: number, type: 'story' | 'featured') => {
+    const handleDragStart = (e: React.DragEvent, index: number, type: 'story' | 'featured' | 'popular') => {
         e.dataTransfer.setData('type', type);
         e.dataTransfer.setData('index', index.toString());
     };
@@ -157,7 +165,7 @@ const AdsManager: React.FC = () => {
         e.preventDefault();
     };
 
-    const handleDrop = (e: React.DragEvent, dropIndex: number, type: 'story' | 'featured') => {
+    const handleDrop = (e: React.DragEvent, dropIndex: number, type: 'story' | 'featured' | 'popular') => {
         const dragType = e.dataTransfer.getData('type');
         if (dragType !== type) return;
 
@@ -170,6 +178,12 @@ const AdsManager: React.FC = () => {
             newItems.splice(dropIndex, 0, draggedItem);
             setStoryAds(newItems.map((item, idx) => ({ ...item, order: idx + 1 })));
             setOrderDirtyStories(true);
+        } else if (type === 'popular') {
+            const newItems = [...popularAds];
+            const [draggedItem] = newItems.splice(dragIndex, 1);
+            newItems.splice(dropIndex, 0, draggedItem);
+            setPopularAds(newItems.map((item, idx) => ({ ...item, order: idx + 1 })));
+            setOrderDirtyPopular(true);
         } else {
             const newItems = [...featuredAds];
             const [draggedItem] = newItems.splice(dragIndex, 1);
@@ -179,15 +193,16 @@ const AdsManager: React.FC = () => {
         }
     };
 
-    const handleSaveOrder = async (type: 'story' | 'featured') => {
+    const handleSaveOrder = async (type: 'story' | 'featured' | 'popular') => {
         try {
             setSaving(true);
-            const items = type === 'story' ? storyAds : featuredAds;
+            const items = type === 'story' ? storyAds : (type === 'featured' ? featuredAds : popularAds);
             const ids = items.map(i => i.id);
             await api.post(`/web-home/ads/${type}/reorder`, ids);
             toast.success('Sıralama başarıyla kaydedildi!');
             if (type === 'story') setOrderDirtyStories(false);
-            else setOrderDirtyFeatured(false);
+            else if (type === 'featured') setOrderDirtyFeatured(false);
+            else setOrderDirtyPopular(false);
         } catch (error) {
             toast.error('Sıralama kaydedilirken hata oluştu.');
         } finally {
@@ -268,6 +283,16 @@ const AdsManager: React.FC = () => {
                     >
                         <Layout size={16} />
                         Google Reklam
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('popular')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium rounded-lg transition-all ${activeTab === 'popular'
+                            ? 'bg-white text-primary shadow-sm'
+                            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+                            }`}
+                    >
+                        <Layers size={16} />
+                        Popüler Mekan
                     </button>
                 </div>
 
@@ -495,14 +520,17 @@ const AdsManager: React.FC = () => {
                                                         >
                                                             <Trash2 size={18} />
                                                         </button>
-                                                        <label className="relative inline-flex items-center cursor-pointer">
+                                                        <label className="relative inline-flex items-center cursor-pointer group">
                                                             <input
                                                                 type="checkbox"
                                                                 className="sr-only peer"
                                                                 checked={area.state.isActive}
                                                                 onChange={(e) => area.setState({ ...area.state, isActive: e.target.checked })}
                                                             />
-                                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-success"></div>
+                                                            <div className="w-14 h-7 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-7 peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500 shadow-inner"></div>
+                                                            <span className={`ml-3 text-xs font-black uppercase tracking-widest ${area.state.isActive ? 'text-green-500' : 'text-gray-400'}`}>
+                                                                {area.state.isActive ? 'Açık' : 'Kapalı'}
+                                                            </span>
                                                         </label>
                                                     </div>
                                                 </div>
@@ -536,7 +564,7 @@ const AdsManager: React.FC = () => {
                                                 ) : (
                                                     <div className="space-y-4">
                                                         <div className="relative group">
-                                                            <div className="aspect-[2/1] w-full bg-white rounded-2xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center overflow-hidden transition-all group-hover:border-primary/50">
+                                                            <div style={{ width: '485px', height: '90px' }} className="bg-white rounded-2xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center overflow-hidden transition-all group-hover:border-primary/50 mx-auto">
                                                                 {area.state.imageUrl ? (
                                                                     <div className="w-full h-full relative">
                                                                         <img src={getImageUrl(area.state.imageUrl)} alt="Preview" className="w-full h-full object-cover" />
@@ -545,12 +573,12 @@ const AdsManager: React.FC = () => {
                                                                         </div>
                                                                     </div>
                                                                 ) : (
-                                                                    <div className="text-center p-6">
-                                                                        <div className="w-12 h-12 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-3">
-                                                                            <ImageIcon size={24} />
+                                                                    <div className="text-center p-2">
+                                                                        <div className="w-8 h-8 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-1">
+                                                                            <ImageIcon size={16} />
                                                                         </div>
-                                                                        <p className="text-xs font-bold text-gray-500">Reklam Görseli Seçin</p>
-                                                                        <p className="text-[10px] text-gray-400 mt-1">Önerilen: 600x250px</p>
+                                                                        <p className="text-[10px] font-bold text-gray-500">Reklam Görseli Seçin</p>
+                                                                        <p className="text-[9px] text-gray-400 mt-0.5">Önerilen: 485x90px</p>
                                                                     </div>
                                                                 )}
                                                                 <input
@@ -591,6 +619,81 @@ const AdsManager: React.FC = () => {
                                         ))}
                                     </div>
                                 </div>
+                            </div>
+                        )}
+
+                        {/* --- POPÜLER MEKANLAR --- */}
+                        {activeTab === 'popular' && (
+                            <div className="space-y-6 animate-in fade-in duration-500">
+                                <div className="flex justify-between items-center mb-4">
+                                    <div>
+                                        <h3 className="text-lg font-bold text-gray-700">Aktif Popüler Mekanlar</h3>
+                                        <p className="text-xs text-gray-400 font-medium">Ana sayfadaki "Popüler Mekanlar" bölümünde listelenen öğeler.</p>
+                                    </div>
+                                    {orderDirtyPopular && (
+                                        <button
+                                            onClick={() => handleSaveOrder('popular')}
+                                            className="flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-green-600 transition-all shadow-md animate-pulse"
+                                        >
+                                            <Save size={16} /> Sıralamayı Kaydet
+                                        </button>
+                                    )}
+                                </div>
+
+                                {popularAds.length === 0 ? (
+                                    <div className="bg-gray-50 rounded-3xl p-12 text-center border-2 border-dashed border-gray-200">
+                                        <p className="text-gray-400 font-medium">Henüz popüler mekan eklenmemiş.</p>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {popularAds.map((ad, index) => (
+                                            <div
+                                                key={ad.id}
+                                                draggable
+                                                onDragStart={(e) => handleDragStart(e, index, 'popular')}
+                                                onDragOver={handleDragOver}
+                                                onDrop={(e) => handleDrop(e, index, 'popular')}
+                                                className={`group relative bg-white rounded-3xl p-6 transition-all border-2 cursor-move hover:shadow-xl ${ad.isActive ? 'border-transparent shadow-sm' : 'border-gray-100 opacity-60'}`}
+                                            >
+                                                <div className="flex items-center gap-4 mb-4">
+                                                    <div className="relative">
+                                                        <img src={getImageUrl(ad.imageUrl)} alt="" className="w-16 h-16 rounded-2xl object-cover shadow-sm border border-gray-100" />
+                                                        <div className="absolute -top-2 -right-2 w-6 h-6 bg-primary text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white shadow-sm">
+                                                            {index + 1}
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <h4 className="font-bold text-gray-800 truncate">{ad.title}</h4>
+                                                        <div className="flex flex-wrap gap-x-2 gap-y-1 mt-1">
+                                                            <span className="text-[9px] bg-orange-50 text-orange-600 px-1.5 py-0.5 rounded-md font-bold border border-orange-100 flex items-center gap-1">
+                                                                <Layers size={8} className="text-orange-500" /> {ad.mainCategory || ad.badge}
+                                                            </span>
+                                                            <span className="text-[9px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-md font-bold border border-blue-100 flex items-center gap-1">
+                                                                <Layers size={8} className="text-blue-500" /> {ad.category || ad.location}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2 mt-1.5">
+                                                            <div className={`w-1.5 h-1.5 rounded-full ${ad.isActive ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                                                            <span className="text-[10px] font-bold text-gray-400">{ad.isActive ? 'AKTİF' : 'PASİF'}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center justify-between pt-4 border-t border-gray-50">
+                                                    <div className="flex gap-2">
+                                                        <button onClick={() => handleToggleActive(ad.id, ad.isActive, 'popular')} className={`p-2 rounded-lg transition-all ${ad.isActive ? 'text-green-500 hover:bg-green-50' : 'text-gray-400 hover:bg-gray-100'}`}>
+                                                            <CheckCircle size={18} />
+                                                        </button>
+                                                        <button onClick={() => handleDeleteAd(ad.id, 'popular')} className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                                                            <Trash2 size={18} />
+                                                        </button>
+                                                    </div>
+                                                    <GripVertical className="text-gray-200" size={20} />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         )}
                     </>
