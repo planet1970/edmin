@@ -579,8 +579,8 @@ const AdsManager: React.FC = () => {
                                                         <div className="relative group">
                                                             <div style={{ width: '590px', height: '160px' }} className="bg-white rounded-2xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center overflow-hidden transition-all group-hover:border-primary/50 mx-auto">
                                                                 {area.state.imageUrl ? (
-                                                                    <div className="w-full h-full relative">
-                                                                        <img src={getImageUrl(area.state.imageUrl)} alt="Preview" className="w-full h-full object-cover" />
+                                                                    <div className="w-full h-full relative flex items-center justify-center">
+                                                                        <img src={getImageUrl(area.state.imageUrl)} alt="Preview" className="w-full h-auto block" />
                                                                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                                                             <Upload className="text-white" size={32} />
                                                                         </div>
