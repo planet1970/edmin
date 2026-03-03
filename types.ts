@@ -212,7 +212,7 @@ export interface FoodPlace {
   badge?: string;
   rating?: number;
   storyTitle?: string;
-  frontContent?: string;
+  description?: string;
   backContent?: string;
   phone?: string;
   hoursMon?: string;

@@ -236,11 +236,11 @@ const FoodPlaceManager: React.FC<Props> = ({ subCategoryId }) => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Hikaye</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Açıklama</label>
                                 <textarea
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-indigo-500 h-24"
-                                    value={formData.frontContent || ''}
-                                    onChange={e => setFormData({ ...formData, frontContent: e.target.value })}
+                                    value={formData.description || ''}
+                                    onChange={e => setFormData({ ...formData, description: e.target.value })}
                                 />
                             </div>
 
