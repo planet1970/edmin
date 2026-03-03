@@ -500,6 +500,19 @@ const AdsManager: React.FC = () => {
                                         </div>
                                     </div>
 
+                                    <div className="bg-blue-50 border border-blue-200 rounded-3xl p-6 mb-8 flex items-start gap-4 shadow-sm">
+                                        <div className="w-12 h-12 bg-blue-500 text-white rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/20">
+                                            <AlertCircle size={24} />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-blue-900 text-lg uppercase tracking-tight">Reklam Boyut Bilgilendirmesi</h4>
+                                            <p className="text-blue-700/80 mt-1 leading-relaxed text-sm">
+                                                Google Reklam alanları için varsayılan ve en ideal görsel boyutu <b className="text-blue-900">590x160 pikseldir</b>.
+                                                Bu ölçü, sitemizdeki reklamların hem masaüstü hem de mobil cihazlarda en iyi şekilde hizalanmasını sağlar.
+                                            </p>
+                                        </div>
+                                    </div>
+
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                                         {/* LEFT AD AREA */}
                                         {[
@@ -564,7 +577,7 @@ const AdsManager: React.FC = () => {
                                                 ) : (
                                                     <div className="space-y-4">
                                                         <div className="relative group">
-                                                            <div style={{ width: '485px', height: '90px' }} className="bg-white rounded-2xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center overflow-hidden transition-all group-hover:border-primary/50 mx-auto">
+                                                            <div style={{ width: '590px', height: '160px' }} className="bg-white rounded-2xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center overflow-hidden transition-all group-hover:border-primary/50 mx-auto">
                                                                 {area.state.imageUrl ? (
                                                                     <div className="w-full h-full relative">
                                                                         <img src={getImageUrl(area.state.imageUrl)} alt="Preview" className="w-full h-full object-cover" />
@@ -574,11 +587,11 @@ const AdsManager: React.FC = () => {
                                                                     </div>
                                                                 ) : (
                                                                     <div className="text-center p-2">
-                                                                        <div className="w-8 h-8 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-1">
-                                                                            <ImageIcon size={16} />
+                                                                        <div className="w-10 h-10 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-1">
+                                                                            <ImageIcon size={20} />
                                                                         </div>
-                                                                        <p className="text-[10px] font-bold text-gray-500">Reklam Görseli Seçin</p>
-                                                                        <p className="text-[9px] text-gray-400 mt-0.5">Önerilen: 485x90px</p>
+                                                                        <p className="text-[11px] font-bold text-gray-500">Reklam Görseli Seçin</p>
+                                                                        <p className="text-[10px] text-gray-400 mt-1 font-bold bg-orange-50 px-2 py-0.5 rounded border border-orange-100">Önerilen: 590x160px</p>
                                                                     </div>
                                                                 )}
                                                                 <input

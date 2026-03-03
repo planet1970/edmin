@@ -74,8 +74,8 @@ const FoodPlaceForm: React.FC<Props> = ({ data, onSave, onCancel, loading }) => 
                     <input type="text" name="storyTitle" value={formData.storyTitle || ''} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-primary" />
                 </div>
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Ön Sayfa İçerik</label>
-                    <textarea name="frontContent" rows={3} value={formData.frontContent || ''} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-primary" />
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Açıklama</label>
+                    <textarea name="description" rows={3} value={formData.description || ''} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-primary" />
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Arka Sayfa İçerik (Modal)</label>

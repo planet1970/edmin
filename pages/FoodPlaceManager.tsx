@@ -169,6 +169,7 @@ const FoodPlaceManager: React.FC<Props> = ({ subCategoryId }) => {
                                             onChange={e => setFormData({ ...formData, imageUrl: e.target.value })}
                                             placeholder="/uploads/foods/..."
                                         />
+                                        <p className="text-[10px] text-gray-400 mt-1">Önerilen: 800x600px</p>
                                     </div>
                                     {formData.imageUrl && (
                                         <div className="relative rounded-lg overflow-hidden border border-gray-200 h-32 bg-gray-50">
@@ -191,6 +192,7 @@ const FoodPlaceManager: React.FC<Props> = ({ subCategoryId }) => {
                                             onChange={e => setFormData({ ...formData, backImageUrl: e.target.value })}
                                             placeholder="/uploads/foods/..."
                                         />
+                                        <p className="text-[10px] text-gray-400 mt-1">Önerilen: 800x600px</p>
                                     </div>
                                     {formData.backImageUrl && (
                                         <div className="relative rounded-lg overflow-hidden border border-gray-200 h-32 bg-gray-50">

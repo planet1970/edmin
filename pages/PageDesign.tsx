@@ -294,7 +294,7 @@ const PageDesign: React.FC = () => {
 
             const payload = type === 'popular' ? {
                 title: item.title,
-                description: item.description || '',
+                description: item.description || (item as any).frontContent || '',
                 imageUrl: sourceType === 'PLACE' ? item.pic_url : (item.imageUrl || ''),
                 rating: item.rating || 0,
                 visitCount: 0,
@@ -542,6 +542,7 @@ const PageDesign: React.FC = () => {
                                                 <Upload size={20} /> <span>{selectedFoodFile ? selectedFoodFile.name : 'Görsel Seç'}</span>
                                                 <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && setSelectedFoodFile(e.target.files[0])} />
                                             </label>
+                                            <p className="text-[10px] text-gray-400 mt-1">Önerilen: 800x600px</p>
                                         </div>
                                         <div className="space-y-3">
                                             <label className="block text-sm font-bold text-gray-700">Devamını Oku Görsel</label>
@@ -555,6 +556,7 @@ const PageDesign: React.FC = () => {
                                                 <Upload size={20} /> <span>{selectedFoodBackFile ? selectedFoodBackFile.name : 'Görsel Seç'}</span>
                                                 <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && setSelectedFoodBackFile(e.target.files[0])} />
                                             </label>
+                                            <p className="text-[10px] text-gray-400 mt-1">Önerilen: 800x600px</p>
                                         </div>
                                     </div>
 
@@ -608,6 +610,7 @@ const PageDesign: React.FC = () => {
                                                 <Upload size={20} /> <span>{selectedFile ? selectedFile.name : 'Görsel Seç'}</span>
                                                 <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && setSelectedFile(e.target.files[0])} />
                                             </label>
+                                            <p className="text-[10px] text-gray-400 mt-1">Önerilen: 800x600px</p>
                                         </div>
                                         <div className="space-y-3">
                                             <label className="block text-sm font-bold text-gray-700">Arka Sayfa Görsel</label>
@@ -616,6 +619,7 @@ const PageDesign: React.FC = () => {
                                                 <Upload size={20} /> <span>{selectedBackFile ? selectedBackFile.name : 'Görsel Seç'}</span>
                                                 <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && setSelectedBackFile(e.target.files[0])} />
                                             </label>
+                                            <p className="text-[10px] text-gray-400 mt-1">Önerilen: 800x600px</p>
                                         </div>
                                     </div>
 

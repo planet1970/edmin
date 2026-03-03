@@ -326,6 +326,7 @@ const WebHomeScreenManager: React.FC = () => {
                                     <div className="absolute inset-0 bg-black/40 hidden group-hover:flex items-center justify-center text-white font-medium text-xs">
                                         <Upload size={16} className="mr-1" /> Değiştir
                                     </div>
+                                    <div className="absolute bottom-1 right-1 bg-black/50 text-[8px] text-white px-1 rounded">1920x600px</div>
                                     <input
                                         type="file"
                                         ref={el => fileInputRefs.current[slide.id] = el}
@@ -625,7 +626,7 @@ const WebHomeScreenManager: React.FC = () => {
                                         onChange={(e) => e.target.files?.[0] && handleLogoChange(e.target.files[0])}
                                     />
                                 </div>
-                                <p className="text-[10px] text-gray-400 text-center italic">Önerilen: Şeffaf (PNG) veya Vektörel (SVG) logo.</p>
+                                <p className="text-[10px] text-gray-400 text-center italic">Önerilen: 300x100px (Şeffaf PNG veya SVG).</p>
                             </div>
 
                             {/* Title & Style Section */}
