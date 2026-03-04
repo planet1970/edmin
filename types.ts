@@ -147,6 +147,10 @@ export interface User {
   roleId: string;
   isActive: boolean;
   createdAt: string;
+  visitCount?: number;
+  lastVisitAt?: string | null;
+  fingerprint?: string;
+  ip?: string;
 }
 
 export interface Place {
@@ -273,6 +277,34 @@ export interface PageLink {
   description: string;
   slug: string;
   targetTable: string;
+  createdAt: string;
+  updatedAt: string;
+}
+export interface ContactMessage {
+  id: number;
+  name: string;
+  email: string;
+  subject?: string;
+  message: string;
+  status: string;
+  completedById?: number;
+  completedBy?: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+export interface Visitor {
+  id: string;
+  fingerprint: string;
+  username: string;
+  lastIp?: string;
+  userAgent?: string;
+  lastVisitAt: string;
+  visitCount: number;
+  customMessage?: string;
   createdAt: string;
   updatedAt: string;
 }

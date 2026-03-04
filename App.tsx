@@ -25,6 +25,9 @@ import PageLinkManager from './pages/PageLinkManager';
 import { Toaster } from 'react-hot-toast';
 // import HistoricalPlaceList from './pages/HistoricalPlaceList'; // Removed as integrated into HistoricalPlace
 
+import VisitorsManager from './pages/VisitorsManager';
+import ContactMessagesManager from './pages/ContactMessagesManager';
+
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     <div className="flex min-h-screen bg-secondary font-sans text-gray-900">
         <Sidebar />
@@ -65,7 +68,9 @@ const App: React.FC = () => {
                                         <Route path="/web-about" element={<WebAboutManager />} />
                                         <Route path="/database-manager/:tableName" element={<DbTableViewer />} />
                                         <Route path="/onboarding" element={<OnboardingManager />} />
+                                        <Route path="/contact" element={<ContactMessagesManager />} />
                                         <Route path="/users" element={<UserManager />} />
+                                        <Route path="/visitors" element={<VisitorsManager />} />
                                         <Route path="/user-types" element={<UserTypeManager />} />
                                         <Route path="/my-pages" element={<MyPagesManager />} />
                                         <Route path="*" element={<Navigate to="/" replace />} />

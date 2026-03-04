@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Smartphone, Layers, Home, ListTree, FilePlus, Database, FileCode, Server, FileText, Users, UserCog, UserCheck, ChevronDown, Grid, Globe, Megaphone } from 'lucide-react';
+import { LayoutDashboard, Smartphone, Layers, Home, ListTree, FilePlus, Database, FileCode, Server, FileText, Users, UserCog, UserCheck, ChevronDown, Grid, Globe, Megaphone, Mail } from 'lucide-react';
 import { NavItem } from '../types';
 import { api } from '../services/api';
 
@@ -23,6 +23,7 @@ const initialMenuItems: { category: string; items: NavItem[] }[] = [
             { title: 'Splash Screen', icon: Layers, path: '/splash' },
             { title: 'Ek Alan', icon: ListTree, path: '/web-about' },
             { title: 'Onboarding', icon: Smartphone, path: '/onboarding' },
+            { title: 'İletişim', icon: Mail, path: '/contact' },
         ],
     },
     {
@@ -48,6 +49,7 @@ const initialMenuItems: { category: string; items: NavItem[] }[] = [
         category: 'KULLANICI',
         items: [
             { title: 'Kullanıcılar', icon: Users, path: '/users' },
+            { title: 'Ziyaretçiler', icon: Users, path: '/visitors' },
             { title: 'Kullanıcı Tipi', icon: UserCog, path: '/user-types' },
         ],
     },

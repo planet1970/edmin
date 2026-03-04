@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit2, Save, XCircle, Search, User as UserIcon, CheckCircle, AlertCircle, Phone, Mail } from 'lucide-react';
+import { Plus, Trash2, Edit2, Save, XCircle, Search, User as UserIcon, CheckCircle, AlertCircle, Phone, Mail, RefreshCw } from 'lucide-react';
 import { User, UserRole } from '../types';
 import { userService } from '../services/users';
 
 const UserManager: React.FC = () => {
     const [users, setUsers] = useState<User[]>([]);
     const [roles, setRoles] = useState<UserRole[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
 
     // UI State
     const [searchQuery, setSearchQuery] = useState('');
@@ -14,26 +15,40 @@ const UserManager: React.FC = () => {
 
     // Load Data
     useEffect(() => {
-        loadRoles();
-        loadUsers();
+        const initData = async () => {
+            setLoading(true);
+            await Promise.all([loadRoles(), loadUsers()]);
+            setLoading(false);
+        };
+        initData();
     }, []);
 
-    const loadRoles = () => {
-        const storedRoles = localStorage.getItem('ems_user_roles');
-        if (storedRoles) {
-            setRoles(JSON.parse(storedRoles));
-        } else {
-            setRoles([
-                { id: 'VIEWER', title: 'Viewer', description: 'Standart Kullanıcı', isSystem: true },
-                { id: 'ADMIN', title: 'Admin', description: 'Yönetici', isSystem: true }
-            ]);
+    const loadRoles = async () => {
+        try {
+            const data = await userService.getTypes();
+            setRoles(data);
+            localStorage.setItem('ems_user_roles', JSON.stringify(data));
+        } catch (error) {
+            console.error('Roller yüklenirken hata oluştu:', error);
+            // Fallback to local storage if API fails
+            const stored = localStorage.getItem('ems_user_roles');
+            if (stored) setRoles(JSON.parse(stored));
         }
     };
 
     const loadUsers = async () => {
         try {
             const data = await userService.getAll();
-            setUsers(data);
+            const mappedData = data.map((u: any) => ({
+                ...u,
+                id: String(u.id),
+                fullName: u.fullName || u.name || 'İsimsiz',
+                roleId: u.roleId || 'USER',
+                visitCount: u.visitCount || 0,
+                lastVisitAt: u.lastVisitAt || null,
+                fingerprint: u.fingerprint || null
+            }));
+            setUsers(mappedData);
         } catch (error) {
             console.error('Kullanıcılar yüklenirken hata oluştu:', error);
         }
@@ -46,7 +61,7 @@ const UserManager: React.FC = () => {
             fullName: '',
             email: '',
             phone: '',
-            roleId: 'VIEWER',
+            roleId: 'USER',
             isActive: true,
             createdAt: ''
         });
@@ -82,13 +97,11 @@ const UserManager: React.FC = () => {
                     name: editingUser.fullName,
                     email: editingUser.email,
                     phone: editingUser.phone,
-                    role: editingUser.roleId,
+                    roleId: editingUser.roleId,
                     isActive: editingUser.isActive
                 };
                 await userService.update(editingUser.id, updateData);
             } else {
-                // Create logic usually handled via register in this app, 
-                // but if we need to create via Admin, we'd need another endpoint.
                 alert('Admin üzerinden yeni kullanıcı ekleme özelliği henüz aktif değil, lütfen kayıt formunu kullanın.');
                 return;
             }
@@ -106,12 +119,26 @@ const UserManager: React.FC = () => {
         (user.email || '').toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    const getRoleTitle = (id: string) => {
+        const role = roles.find(r => r.id === id);
+        return role ? role.title : id;
+    };
+
     return (
         <div className="p-6">
             <div className="flex justify-between items-center mb-6">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-800">Kullanıcılar</h1>
                     <p className="text-sm text-gray-500">Kayıtlı kullanıcıları listeleyin ve yönetin.</p>
+                </div>
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => { loadRoles(); loadUsers(); }}
+                        className="p-2 text-gray-400 hover:text-primary transition-colors bg-white rounded-lg border border-gray-200"
+                        title="Yenile"
+                    >
+                        <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+                    </button>
                 </div>
             </div>
 
@@ -209,74 +236,111 @@ const UserManager: React.FC = () => {
 
                     {/* Table */}
                     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-                        <table className="w-full text-left border-collapse">
-                            <thead className="bg-gray-50 text-gray-500 font-medium text-xs uppercase border-b border-gray-200">
-                                <tr>
-                                    <th className="px-6 py-4">Kullanıcı</th>
-                                    <th className="px-6 py-4">İletişim</th>
-                                    <th className="px-6 py-4">Rol</th>
-                                    <th className="px-6 py-4">Kayıt Tarihi</th>
-                                    <th className="px-6 py-4">Durum</th>
-                                    <th className="px-6 py-4 text-right">İşlemler</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100">
-                                {filteredUsers.length === 0 ? (
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead className="bg-gray-50 text-gray-500 font-medium text-xs uppercase border-b border-gray-200">
                                     <tr>
-                                        <td colSpan={6} className="px-6 py-12 text-center text-gray-400">
-                                            Kullanıcı bulunamadı.
-                                        </td>
+                                        <th className="px-6 py-4">Kullanıcı</th>
+                                        <th className="px-6 py-4">İletişim</th>
+                                        <th className="px-6 py-4">Rol</th>
+                                        <th className="px-6 py-4">Ziyaret Bilgisi</th>
+                                        <th className="px-6 py-4">Sistem Kimliği</th>
+                                        <th className="px-6 py-4">Durum</th>
+                                        <th className="px-6 py-4 text-right">İşlemler</th>
                                     </tr>
-                                ) : (
-                                    filteredUsers.map(user => (
-                                        <tr key={user.id} className="hover:bg-gray-50 transition-colors">
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-full bg-orange-50 text-primary flex items-center justify-center font-bold text-sm">
-                                                        {(user.fullName || user.email || '??').substring(0, 2).toUpperCase()}
-                                                    </div>
-                                                    <div>
-                                                        <div className="font-bold text-gray-800">{user.fullName || 'İsimsiz'}</div>
-                                                        <div className="text-xs text-gray-500">ID: {user.id}</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex flex-col gap-1 text-sm text-gray-600">
-                                                    <div className="flex items-center gap-2"><Mail size={12} /> {user.email}</div>
-                                                    {user.phone && <div className="flex items-center gap-2"><Phone size={12} /> {user.phone}</div>}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs border border-gray-200 font-medium">
-                                                    {user.roleId}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-gray-500">
-                                                {user.createdAt ? new Date(user.createdAt).toLocaleDateString('tr-TR') : '-'}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                {user.isActive ? (
-                                                    <span className="flex items-center gap-1 text-green-600 text-xs font-bold"><CheckCircle size={14} /> Aktif</span>
-                                                ) : (
-                                                    <span className="flex items-center gap-1 text-gray-400 text-xs font-bold"><XCircle size={14} /> Pasif</span>
-                                                )}
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="flex justify-end gap-2">
-                                                    <button onClick={() => handleEdit(user)} className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors">
-                                                        <Edit2 size={18} />
-                                                    </button>
-                                                    <button onClick={() => handleDelete(user.id)} className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors">
-                                                        <Trash2 size={18} />
-                                                    </button>
-                                                </div>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100">
+                                    {loading ? (
+                                        <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-400">Yükleniyor...</td></tr>
+                                    ) : filteredUsers.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={6} className="px-6 py-12 text-center text-gray-400">
+                                                Kullanıcı bulunamadı.
                                             </td>
                                         </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
+                                    ) : (
+                                        filteredUsers.map(user => (
+                                            <tr key={user.id} className="hover:bg-gray-50 transition-colors">
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 rounded-full bg-orange-50 text-primary flex items-center justify-center font-bold text-sm">
+                                                            {(user.fullName || user.email || '??').substring(0, 2).toUpperCase()}
+                                                        </div>
+                                                        <div>
+                                                            <div className="font-bold text-gray-800">{user.fullName || 'İsimsiz'}</div>
+                                                            <div className="text-xs text-gray-500">ID: {user.id}</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex flex-col gap-1 text-sm text-gray-600">
+                                                        <div className="flex items-center gap-2"><Mail size={12} /> {user.email}</div>
+                                                        {user.phone && <div className="flex items-center gap-2"><Phone size={12} /> {user.phone}</div>}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs border border-gray-200 font-medium">
+                                                        {getRoleTitle(user.roleId)}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex flex-col gap-1">
+                                                        <div className="flex items-center gap-1.5 text-gray-700 bg-gray-50 px-2 py-0.5 rounded-full w-fit border border-gray-100">
+                                                            <RefreshCw size={10} className="text-primary" />
+                                                            <span className="font-bold text-xs">{user.visitCount}</span>
+                                                            <span className="text-[10px] text-gray-400">kez</span>
+                                                        </div>
+                                                        {user.lastVisitAt && (
+                                                            <div className="text-[10px] text-gray-400 flex items-center gap-1">
+                                                                <CheckCircle size={10} className="text-green-500" />
+                                                                {new Date(user.lastVisitAt).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="text-[10px] space-y-0.5 font-mono text-gray-500">
+                                                        {user.fingerprint ? (
+                                                            <div className="bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100 overflow-hidden text-ellipsis whitespace-nowrap max-w-[120px]" title={user.fingerprint}>
+                                                                FP: {user.fingerprint}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="text-gray-300 italic">Anonim Kayıt</div>
+                                                        )}
+                                                        {user.ip && (
+                                                            <div className="px-1.5">
+                                                                IP: {user.ip}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    {user.isActive ? (
+                                                        <span className="inline-flex items-center gap-1 text-green-600 bg-green-50 px-2 py-1 rounded-lg text-xs font-bold border border-green-100">
+                                                            <CheckCircle size={12} /> Aktif
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center gap-1 text-gray-400 bg-gray-50 px-2 py-1 rounded-lg text-xs font-bold border border-gray-100">
+                                                            <XCircle size={12} /> Pasif
+                                                        </span>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <div className="flex justify-end gap-2">
+                                                        <button onClick={() => handleEdit(user)} className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors">
+                                                            <Edit2 size={18} />
+                                                        </button>
+                                                        <button onClick={() => handleDelete(user.id)} className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors">
+                                                            <Trash2 size={18} />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )
+                                        ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             )}
