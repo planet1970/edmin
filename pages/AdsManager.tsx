@@ -16,13 +16,14 @@ import {
     GripVertical,
     Edit3,
     Layers,
-    X
+    X,
+    Clock
 } from 'lucide-react';
 import { api, getImageUrl } from '../services/api';
 import { toast } from 'react-hot-toast';
 
 const AdsManager: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'stories' | 'featured' | 'popular' | 'google'>('stories');
+    const [activeTab, setActiveTab] = useState<'stories' | 'featured' | 'popular' | 'google' | 'popup'>('stories');
     const [saving, setSaving] = useState(false);
     const [loadingData, setLoadingData] = useState(false);
 
@@ -33,6 +34,14 @@ const AdsManager: React.FC = () => {
     const [googleAds, setGoogleAds] = useState<any[]>([]);
     const [leftAd, setLeftAd] = useState<any>({ type: 'SCRIPT', scriptCode: '', imageUrl: '', linkUrl: '', isActive: true });
     const [rightAd, setRightAd] = useState<any>({ type: 'SCRIPT', scriptCode: '', imageUrl: '', linkUrl: '', isActive: true });
+
+    const [popupAds, setPopupAds] = useState<any[]>([]);
+    const [popupFile, setPopupFile] = useState<File | null>(null);
+    const [popupTitle, setPopupTitle] = useState('');
+    const [popupLink, setPopupLink] = useState('');
+    const [popupIsActive, setPopupIsActive] = useState(true);
+    const [isPopupEditing, setIsPopupEditing] = useState(false);
+    const [popupEditingId, setPopupEditingId] = useState<number | null>(null);
 
     const [orderDirtyStories, setOrderDirtyStories] = useState(false);
     const [orderDirtyFeatured, setOrderDirtyFeatured] = useState(false);
@@ -66,6 +75,9 @@ const AdsManager: React.FC = () => {
                 const right = data.find((a: any) => a.areaName === 'HOME_RIGHT');
                 if (left) setLeftAd(left);
                 if (right) setRightAd(right);
+            } else if (activeTab === 'popup') {
+                const data = await api.get<any[]>('/web-home/ads/popup');
+                setPopupAds(data);
             }
         } catch (error) {
             console.error('Error fetching ads:', error);
@@ -134,7 +146,7 @@ const AdsManager: React.FC = () => {
         toast.success('Ayarlar başarıyla kaydedildi!');
     };
 
-    const handleDeleteAd = async (id: number, type: 'story' | 'featured' | 'popular') => {
+    const handleDeleteAd = async (id: number, type: 'story' | 'featured' | 'popular' | 'popup') => {
         const itemType = type === 'popular' ? 'mekanı' : 'reklamı';
         if (!window.confirm(`Bu ${itemType} silmek istediğinize emin misiniz?`)) return;
         try {
@@ -146,13 +158,62 @@ const AdsManager: React.FC = () => {
         }
     };
 
-    const handleToggleActive = async (id: number, current: boolean, type: 'story' | 'featured' | 'popular') => {
+    const handleToggleActive = async (id: number, current: boolean, type: 'story' | 'featured' | 'popular' | 'popup') => {
         try {
             await api.patch(`/web-home/ads/${type}/${id}`, { isActive: !current });
             fetchData();
         } catch (error) {
             alert('Güncelleme hatası.');
         }
+    };
+
+    const handleSavePopupAd = async () => {
+        if (!popupFile && !isPopupEditing) {
+            toast.error('Lütfen bir görsel seçin.');
+            return;
+        }
+        setSaving(true);
+        try {
+            const formData = new FormData();
+            if (popupFile) formData.append('file', popupFile);
+            formData.append('title', popupTitle);
+            formData.append('linkUrl', popupLink);
+            formData.append('isActive', popupIsActive.toString());
+
+            if (isPopupEditing && popupEditingId) {
+                await api.patch(`/web-home/ads/popup/${popupEditingId}`, formData);
+                toast.success('Açılış reklamı güncellendi.');
+            } else {
+                await api.post('/web-home/ads/popup', formData);
+                toast.success('Açılış reklamı eklendi.');
+            }
+
+            handleCancelPopupEdit();
+            fetchData();
+        } catch (error) {
+            toast.error('Kayıt sırasında hata oluştu.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleEditPopup = (ad: any) => {
+        setIsPopupEditing(true);
+        setPopupEditingId(ad.id);
+        setPopupTitle(ad.title || '');
+        setPopupLink(ad.linkUrl || '');
+        setPopupIsActive(ad.isActive);
+        // Scroll to top of form
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleCancelPopupEdit = () => {
+        setIsPopupEditing(false);
+        setPopupEditingId(null);
+        setPopupFile(null);
+        setPopupTitle('');
+        setPopupLink('');
+        setPopupIsActive(true);
     };
 
     // --- DRAG AND DROP ---
@@ -294,6 +355,16 @@ const AdsManager: React.FC = () => {
                         <Layers size={16} />
                         Popüler Mekan
                     </button>
+                    <button
+                        onClick={() => setActiveTab('popup')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium rounded-lg transition-all ${activeTab === 'popup'
+                            ? 'bg-white text-primary shadow-sm'
+                            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+                            }`}
+                    >
+                        <Megaphone size={16} />
+                        Açılış Reklamı
+                    </button>
                 </div>
 
                 {loadingData ? (
@@ -303,6 +374,160 @@ const AdsManager: React.FC = () => {
                     </div>
                 ) : (
                     <>
+                        {/* --- AÇILIŞ REKLAMI --- */}
+                        {activeTab === 'popup' && (
+                            <div className="space-y-8 animate-in fade-in duration-500">
+                                <div className="bg-white p-6 md:p-8 rounded-3xl border border-gray-100 shadow-sm">
+                                    <div className="flex items-center justify-between mb-8">
+                                        <div>
+                                            <h3 className="text-xl font-bold text-gray-800 flex items-center gap-3">
+                                                <Megaphone size={24} className="text-primary" />
+                                                {isPopupEditing ? 'Pop-up Reklamını Düzenle' : 'Yeni Açılış Reklamı Ekle'}
+                                            </h3>
+                                            <p className="text-sm text-gray-500 mt-1">Web sitesine girildiğinde ilk açılan büyük reklam görseli.</p>
+                                        </div>
+                                        {isPopupEditing && (
+                                            <button
+                                                onClick={handleCancelPopupEdit}
+                                                className="text-gray-400 hover:text-gray-600 text-sm font-medium flex items-center gap-1"
+                                            >
+                                                <X size={16} /> Düzenlemeyi İptal Et
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    <div className="space-y-6">
+                                        <div className="flex items-center gap-4">
+                                            <div className="flex-1">
+                                                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Reklam Görseli</label>
+                                                <div className="relative">
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        onChange={(e) => setPopupFile(e.target.files?.[0] || null)}
+                                                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-primary file:text-white hover:file:bg-orange-600 transition-all cursor-pointer bg-gray-50 border border-gray-100 rounded-xl"
+                                                    />
+                                                </div>
+                                                <p className="text-[10px] text-gray-400 mt-1 font-medium italic">* Tavsiye edilen maksimum ölçü: 800x1000px {isPopupEditing && '(Değiştirmek istemiyorsanız boş bırakın)'}</p>
+                                                {popupFile && <p className="text-xs text-green-600 font-bold mt-2">✓ Seçildi: {popupFile.name}</p>}
+                                            </div>
+
+                                            <div className="flex-[1.5]">
+                                                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Reklam Başlığı / Tanımı</label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="Örn: Ramazan Özel İndirimi"
+                                                    value={popupTitle}
+                                                    onChange={(e) => setPopupTitle(e.target.value)}
+                                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-primary bg-gray-50 text-sm"
+                                                />
+                                            </div>
+
+                                            <div className="flex-1">
+                                                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Yönlendirme Linki (İsteğe Bağlı)</label>
+                                                <input
+                                                    type="url"
+                                                    placeholder="Örn: https://edirnerehberi.com/kampanya"
+                                                    value={popupLink}
+                                                    onChange={(e) => setPopupLink(e.target.value)}
+                                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-primary bg-gray-50 text-sm"
+                                                />
+                                            </div>
+
+                                            <div className="w-32">
+                                                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Durum</label>
+                                                <label className="relative inline-flex items-center cursor-pointer group w-full h-[40px] px-2 bg-gray-50 border border-gray-200 rounded-xl">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="sr-only peer"
+                                                        checked={popupIsActive}
+                                                        onChange={(e) => setPopupIsActive(e.target.checked)}
+                                                    />
+                                                    <div className="w-10 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-5 peer-checked:after:border-white after:content-[''] after:absolute after:top-[12px] after:left-[10px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500 shadow-inner"></div>
+                                                    <span className={`ml-2 text-xs font-black uppercase ${popupIsActive ? 'text-green-500' : 'text-gray-400'}`}>
+                                                        {popupIsActive ? 'Açık' : 'Kapalı'}
+                                                    </span>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            onClick={handleSavePopupAd}
+                                            disabled={saving || (!popupFile && !isPopupEditing)}
+                                            className="w-full flex items-center justify-center gap-2 py-3 bg-gray-900 text-white font-bold rounded-xl hover:bg-black transition-all shadow-md disabled:opacity-50"
+                                        >
+                                            {saving ? <Loader size={18} className="animate-spin" /> : (isPopupEditing ? <Save size={18} /> : <Plus size={18} />)}
+                                            {isPopupEditing ? 'Değişiklikleri Kaydet' : 'Yeni Açılış Reklamını Kaydet'}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="bg-white p-6 md:p-8 rounded-3xl border border-gray-100 shadow-sm">
+                                    <h3 className="text-xl font-bold text-gray-800 mb-6 border-b border-gray-100 pb-4">Geçmiş Açılış Reklamları</h3>
+
+                                    {popupAds.length === 0 ? (
+                                        <div className="text-center py-12 border-2 border-dashed border-gray-100 rounded-2xl bg-gray-50">
+                                            <p className="text-gray-400 font-medium">Henüz eklenmiş bir açılış reklamı bulunmuyor.</p>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                            {popupAds.map(ad => (
+                                                <div key={ad.id} className={`group relative bg-white border border-gray-200 rounded-2xl overflow-hidden transition-all ${ad.isActive ? 'ring-2 ring-green-500 shadow-lg' : 'hover:shadow-md'}`}>
+                                                    <div className="h-40 w-full overflow-hidden bg-gray-100 relative">
+                                                        {ad.isActive && (
+                                                            <div className="absolute top-2 right-2 z-10 bg-green-500 text-white text-[10px] uppercase font-black px-2 py-1 rounded shadow-sm flex items-center gap-1">
+                                                                <CheckCircle size={10} /> Aktif
+                                                            </div>
+                                                        )}
+                                                        <img
+                                                            src={getImageUrl(ad.imageUrl)}
+                                                            alt="Popup Reklamı"
+                                                            className={`w-full h-full object-cover transition-all duration-500 ${!ad.isActive && 'grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100'}`}
+                                                        />
+                                                    </div>
+                                                    <div className="p-4 bg-white border-t border-gray-100">
+                                                        <div className="text-xs text-gray-400 font-medium mb-3 flex items-center justify-between">
+                                                            <div className="flex items-center gap-1">
+                                                                <Clock size={12} /> {new Date(ad.createdAt).toLocaleDateString("tr-TR")}
+                                                            </div>
+                                                            <div className="flex items-center gap-1 text-primary font-bold">
+                                                                <Star size={12} fill="currentColor" /> {ad.viewCount || 0} Gösterim
+                                                            </div>
+                                                        </div>
+                                                        <div className="font-bold text-gray-800 text-sm mb-3 truncate" title={ad.title || 'Başlıksız Reklam'}>
+                                                            {ad.title || 'Başlıksız Reklam'}
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <button
+                                                                onClick={() => handleToggleActive(ad.id, ad.isActive, 'popup')}
+                                                                className={`flex-1 flex justify-center items-center gap-1 py-1.5 rounded-lg text-xs font-bold transition-all ${ad.isActive ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                                                            >
+                                                                {ad.isActive ? 'PASİF YAP' : 'AKTİF YAP'}
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleEditPopup(ad)}
+                                                                className="w-8 h-8 flex items-center justify-center bg-gray-50 text-gray-400 hover:bg-blue-50 hover:text-blue-500 rounded-lg transition-all"
+                                                                title="Düzenle"
+                                                            >
+                                                                <Edit3 size={14} />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDeleteAd(ad.id, 'popup')}
+                                                                className="w-8 h-8 flex items-center justify-center bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-500 rounded-lg transition-all"
+                                                                title="Tamamen Sil"
+                                                            >
+                                                                <Trash2 size={14} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
                         {/* --- HİKAYE REKLAM --- */}
                         {activeTab === 'stories' && (
                             <div className="space-y-4 animate-in fade-in duration-500">

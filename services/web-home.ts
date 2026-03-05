@@ -124,4 +124,19 @@ export const webHomeService = {
     getPopular: async () => {
         return api.get<any[]>('/web-home/ads/popular');
     },
+    getPopupAds: async () => {
+        return api.get<any[]>('/web-home/ads/popup');
+    },
+    createPopupAd: async (data: FormData) => {
+        return api.post('/web-home/ads/popup', data);
+    },
+    updatePopupAd: async (id: number, data: FormData) => {
+        return api.patch(`/web-home/ads/popup/${id}`, data);
+    },
+    removePopupAd: async (id: number) => {
+        return api.delete(`/web-home/ads/popup/${id}`);
+    },
+    incrementPopupView: async (id: number) => {
+        return api.patch(`/web-home/ads/popup/${id}/view`, {});
+    },
 };
