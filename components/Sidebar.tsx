@@ -24,6 +24,7 @@ const initialMenuItems: { category: string; items: NavItem[] }[] = [
             { title: 'Ek Alan', icon: ListTree, path: '/web-about' },
             { title: 'Onboarding', icon: Smartphone, path: '/onboarding' },
             { title: 'İletişim', icon: Mail, path: '/contact' },
+            { title: 'Taslaklar', icon: FilePlus, path: '/drafts' },
         ],
     },
     {

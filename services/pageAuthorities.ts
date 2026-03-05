@@ -16,11 +16,14 @@ export interface PageAuthority {
 }
 
 export interface AssignedCustomer {
+    id: number;
     userId: number;
     userName: string;
     pageId: number;
     pageType: string;
     pageTitle: string;
+    categoryId: number | null;
+    subCategoryId: number | null;
 }
 
 const basePath = "/page-authorities";

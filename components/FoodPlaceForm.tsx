@@ -8,14 +8,21 @@ interface Props {
     onSave: (payload: any, file?: File, backFile?: File) => Promise<void>;
     onCancel: () => void;
     loading: boolean;
+    showActiveToggle?: boolean;
+    saveButtonText?: string;
+    isReadOnly?: boolean;
 }
 
-const FoodPlaceForm: React.FC<Props> = ({ data, onSave, onCancel, loading }) => {
+const FoodPlaceForm: React.FC<Props> = ({
+    data, onSave, onCancel, loading, showActiveToggle = true,
+    saveButtonText = 'Kaydet', isReadOnly = false
+}) => {
     const [formData, setFormData] = useState<Partial<FoodPlace>>(data);
     const [file, setFile] = useState<File | null>(null);
     const [backFile, setBackFile] = useState<File | null>(null);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+        if (isReadOnly) return;
         const { name, value, type } = e.target;
         setFormData(prev => ({
             ...prev,
@@ -27,6 +34,7 @@ const FoodPlaceForm: React.FC<Props> = ({ data, onSave, onCancel, loading }) => 
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        if (isReadOnly) return;
         onSave(formData, file || undefined, backFile || undefined);
     };
 
@@ -34,7 +42,7 @@ const FoodPlaceForm: React.FC<Props> = ({ data, onSave, onCancel, loading }) => 
         <div className="bg-white p-8 rounded-xl shadow-lg border border-primary/10">
             <div className="flex justify-between items-center mb-8 border-b pb-4">
                 <h2 className="text-xl font-bold text-gray-800">
-                    {formData.id ? 'Yeme & İçme Mekanı Düzenle' : 'Yeni Yeme & İçme Mekanı'}
+                    {isReadOnly ? 'Taslak Görüntüle' : (formData.id ? 'Yeme & İçme Mekanı Düzenle' : 'Yeni Yeme & İçme Mekanı')}
                 </h2>
                 <button onClick={onCancel} className="text-gray-400 hover:text-gray-600 transition-colors">
                     <X size={28} />
@@ -48,33 +56,39 @@ const FoodPlaceForm: React.FC<Props> = ({ data, onSave, onCancel, loading }) => 
                         {(file || formData.imageUrl) && (
                             <img
                                 src={file ? URL.createObjectURL(file) : getImageUrl(formData.imageUrl)}
-                                className="w-full h-48 object-cover rounded-xl border"
+                                className="w-full h-48 object-cover rounded-xl border shadow-sm"
+                                alt="Main"
                             />
                         )}
-                        <label className="flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-primary hover:bg-primary/5 transition-all text-gray-500">
-                            <Upload size={20} /> <span>{file ? file.name : 'Görsel Seç'}</span>
-                            <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && setFile(e.target.files[0])} />
-                        </label>
+                        {!isReadOnly && (
+                            <label className="flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-primary hover:bg-primary/5 transition-all text-gray-500">
+                                <Upload size={20} /> <span>{file ? file.name : 'Görsel Seç'}</span>
+                                <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && setFile(e.target.files[0])} />
+                            </label>
+                        )}
                     </div>
                     <div className="space-y-3">
                         <label className="block text-sm font-bold text-gray-700">Arka Sayfa Görsel</label>
                         {(backFile || formData.backImageUrl) && (
                             <img
                                 src={backFile ? URL.createObjectURL(backFile) : getImageUrl(formData.backImageUrl)}
-                                className="w-full h-48 object-cover rounded-xl border"
+                                className="w-full h-48 object-cover rounded-xl border shadow-sm"
+                                alt="Back"
                             />
                         )}
-                        <label className="flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-primary hover:bg-primary/5 transition-all text-gray-500">
-                            <Upload size={20} /> <span>{backFile ? backFile.name : 'Görsel Seç'}</span>
-                            <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && setBackFile(e.target.files[0])} />
-                        </label>
+                        {!isReadOnly && (
+                            <label className="flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-primary hover:bg-primary/5 transition-all text-gray-500">
+                                <Upload size={20} /> <span>{backFile ? backFile.name : 'Görsel Seç'}</span>
+                                <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && setBackFile(e.target.files[0])} />
+                            </label>
+                        )}
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Mekan Adı</label>
-                        <input required type="text" name="title" value={formData.title || ''} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-primary" />
+                        <input required disabled={isReadOnly} type="text" name="title" value={formData.title || ''} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-primary disabled:bg-gray-50" />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Slug (Tasarım)</label>
@@ -82,54 +96,56 @@ const FoodPlaceForm: React.FC<Props> = ({ data, onSave, onCancel, loading }) => 
                     </div>
                     <div className="col-span-full">
                         <label className="block text-sm font-medium text-gray-700 mb-1">Alt Başlık</label>
-                        <input type="text" name="subtitle" value={formData.subtitle || ''} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-primary" />
+                        <input type="text" disabled={isReadOnly} name="subtitle" value={formData.subtitle || ''} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-primary disabled:bg-gray-50" />
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Rating</label>
-                        <input type="number" step="0.1" name="rating" value={formData.rating || ''} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-primary" />
+                        <input type="number" step="0.1" disabled={isReadOnly} name="rating" value={formData.rating || ''} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-primary disabled:bg-gray-50" />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Rozet (Meşhur vb.)</label>
-                        <input type="text" name="badge" value={formData.badge || ''} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-primary" />
+                        <input type="text" disabled={isReadOnly} name="badge" value={formData.badge || ''} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-primary disabled:bg-gray-50" />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Telefon</label>
-                        <input type="text" name="phone" value={formData.phone || ''} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-primary" />
+                        <input type="text" disabled={isReadOnly} name="phone" value={formData.phone || ''} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-primary disabled:bg-gray-50" />
                     </div>
                 </div>
 
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Konu Başlığı</label>
-                    <input type="text" name="storyTitle" value={formData.storyTitle || ''} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-primary" />
+                    <input type="text" disabled={isReadOnly} name="storyTitle" value={formData.storyTitle || ''} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-primary disabled:bg-gray-50" />
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Açıklama</label>
-                    <textarea name="description" rows={3} value={formData.description || ''} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-primary" />
+                    <textarea name="description" disabled={isReadOnly} rows={3} value={formData.description || ''} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-primary disabled:bg-gray-50" />
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Arka Sayfa İçerik (Modal)</label>
-                    <textarea name="backContent" rows={6} value={formData.backContent || ''} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-primary" />
+                    <textarea name="backContent" disabled={isReadOnly} rows={6} value={formData.backContent || ''} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-primary disabled:bg-gray-50" />
                 </div>
 
                 <div className="p-6 bg-gray-50 rounded-xl border border-gray-200">
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="font-bold text-gray-700">Çalışma Saatleri</h3>
-                        <label className="flex items-center gap-2 cursor-pointer">
-                            <span className="text-xs font-bold text-gray-500">HER GÜN AYNI</span>
-                            <div
-                                onClick={() => {
-                                    const next = !isEveryday;
-                                    setIsEveryday(next);
-                                    if (!next) setFormData({ ...formData, hoursEveryday: '' });
-                                }}
-                                className={`w-10 h-5 rounded-full transition-colors relative ${isEveryday ? 'bg-green-500' : 'bg-gray-300'}`}
-                            >
-                                <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${isEveryday ? 'left-6' : 'left-1'}`} />
-                            </div>
-                        </label>
+                        {!isReadOnly && (
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <span className="text-xs font-bold text-gray-500">HER GÜN AYNI</span>
+                                <div
+                                    onClick={() => {
+                                        const next = !isEveryday;
+                                        setIsEveryday(next);
+                                        if (!next) setFormData({ ...formData, hoursEveryday: '' });
+                                    }}
+                                    className={`w-10 h-5 rounded-full transition-colors relative ${isEveryday ? 'bg-green-500' : 'bg-gray-300'}`}
+                                >
+                                    <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${isEveryday ? 'left-6' : 'left-1'}`} />
+                                </div>
+                            </label>
+                        )}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -138,7 +154,7 @@ const FoodPlaceForm: React.FC<Props> = ({ data, onSave, onCancel, loading }) => 
                             <input
                                 type="text"
                                 name="hoursEveryday"
-                                disabled={!isEveryday}
+                                disabled={!isEveryday || isReadOnly}
                                 value={formData.hoursEveryday || ''}
                                 onChange={handleChange}
                                 placeholder="09:00 - 23:00"
@@ -158,11 +174,11 @@ const FoodPlaceForm: React.FC<Props> = ({ data, onSave, onCancel, loading }) => 
                                     <input
                                         type="text"
                                         name={day.key}
-                                        disabled={isEveryday}
+                                        disabled={isEveryday || isReadOnly}
                                         value={(formData as any)[day.key] || ''}
                                         onChange={handleChange}
                                         placeholder="09:00"
-                                        className="w-full px-2 py-1.5 border border-gray-200 rounded bg-white text-xs"
+                                        className="w-full px-2 py-1.5 border border-gray-200 rounded bg-white text-xs disabled:bg-gray-50"
                                     />
                                 </div>
                             ))}
@@ -186,10 +202,10 @@ const FoodPlaceForm: React.FC<Props> = ({ data, onSave, onCancel, loading }) => 
                                     <span className={`text-xs font-bold ${i <= 5 ? 'text-orange-500' : 'text-gray-400'}`}>{i}.</span>
                                 </div>
                                 <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
-                                    <input placeholder="Ürün Adı" name={`menuItem${i}`} value={(formData as any)[`menuItem${i}`] || ''} onChange={handleChange} className="px-3 py-2 border rounded bg-white text-sm focus:outline-primary" />
-                                    <input placeholder="Açıklama / İçerik" name={`menuDesc${i}`} value={(formData as any)[`menuDesc${i}`] || ''} onChange={handleChange} className="px-3 py-2 border rounded bg-white text-sm focus:outline-primary" />
+                                    <input placeholder="Ürün Adı" disabled={isReadOnly} name={`menuItem${i}`} value={(formData as any)[`menuItem${i}`] || ''} onChange={handleChange} className="px-3 py-2 border rounded bg-white text-sm focus:outline-primary disabled:bg-gray-50" />
+                                    <input placeholder="Açıklama / İçerik" disabled={isReadOnly} name={`menuDesc${i}`} value={(formData as any)[`menuDesc${i}`] || ''} onChange={handleChange} className="px-3 py-2 border rounded bg-white text-sm focus:outline-primary disabled:bg-gray-50" />
                                     <div className="flex items-center gap-2">
-                                        <input placeholder="Fiyat" name={`menuPrice${i}`} value={(formData as any)[`menuPrice${i}`] || ''} onChange={handleChange} className="flex-1 px-3 py-2 border rounded bg-white text-sm focus:outline-primary font-bold" />
+                                        <input placeholder="Fiyat" disabled={isReadOnly} name={`menuPrice${i}`} value={(formData as any)[`menuPrice${i}`] || ''} onChange={handleChange} className="flex-1 px-3 py-2 border rounded bg-white text-sm focus:outline-primary font-bold disabled:bg-gray-50" />
                                         <span className="text-gray-400 font-bold">₺</span>
                                     </div>
                                 </div>
@@ -198,19 +214,21 @@ const FoodPlaceForm: React.FC<Props> = ({ data, onSave, onCancel, loading }) => 
                     </div>
                 </div>
 
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">İmkanlar (Virgül ile ayırın)</label>
-                    <input type="text" name="features" value={formData.features || ''} onChange={handleChange} placeholder="WiFi, Otopark, Bahçe..." className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-primary" />
-                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="col-span-full">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">İmkanlar (Virgül ile ayırın)</label>
+                        <input type="text" disabled={isReadOnly} name="features" value={formData.features || ''} onChange={handleChange} placeholder="WiFi, Otopark, Bahçe..." className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-primary disabled:bg-gray-50" />
+                    </div>
 
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Adres</label>
-                    <textarea name="address" rows={2} value={formData.address || ''} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-primary" />
-                </div>
+                    <div className="col-span-full">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Adres</label>
+                        <textarea name="address" disabled={isReadOnly} rows={2} value={formData.address || ''} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-primary disabled:bg-gray-50" />
+                    </div>
 
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Web Sitesi</label>
-                    <input type="text" name="website" value={formData.website || ''} onChange={handleChange} placeholder="www.example.com" className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-primary" />
+                    <div className="col-span-full">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Web Sitesi</label>
+                        <input type="text" disabled={isReadOnly} name="website" value={formData.website || ''} onChange={handleChange} placeholder="www.example.com" className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-primary disabled:bg-gray-50" />
+                    </div>
                 </div>
 
                 <div className="p-4 bg-blue-50/30 rounded-xl border border-blue-100">
@@ -219,25 +237,32 @@ const FoodPlaceForm: React.FC<Props> = ({ data, onSave, onCancel, loading }) => 
                         {[1, 2, 3, 4, 5].map(i => (
                             <div key={i}>
                                 <label className="block text-[10px] text-blue-400 font-bold mb-1">{`FIELD ${i}`}</label>
-                                <input type="text" name={`field${i}`} value={(formData as any)[`field${i}`] || ''} onChange={handleChange} className="w-full px-3 py-1.5 border border-blue-100 rounded bg-white text-xs" />
+                                <input type="text" disabled={isReadOnly} name={`field${i}`} value={(formData as any)[`field${i}`] || ''} onChange={handleChange} className="w-full px-3 py-1.5 border border-blue-100 rounded bg-white text-xs disabled:bg-gray-50" />
                             </div>
                         ))}
                     </div>
                 </div>
 
                 <div className="flex items-center gap-3 pt-6 border-t border-gray-100">
-                    <label className="flex items-center gap-2 cursor-pointer group">
-                        <input type="checkbox" name="isActive" checked={formData.isActive} onChange={(e: any) => handleChange(e)} className="w-5 h-5 text-primary rounded border-gray-300 focus:ring-primary" />
-                        <span className="text-sm font-medium text-gray-700 group-hover:text-primary transition-colors">Aktif Yayın</span>
-                    </label>
+                    {showActiveToggle && !isReadOnly && (
+                        <label className="flex items-center gap-2 cursor-pointer group">
+                            <input type="checkbox" name="isActive" checked={formData.isActive} onChange={(e: any) => handleChange(e)} className="w-5 h-5 text-primary rounded border-gray-300 focus:ring-primary" />
+                            <span className="text-sm font-medium text-gray-700 group-hover:text-primary transition-colors">Aktif Yayın</span>
+                        </label>
+                    )}
                     <div className="flex-1"></div>
-                    <button type="button" onClick={onCancel} className="px-6 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">İptal</button>
-                    <button type="submit" disabled={loading} className="flex items-center gap-2 bg-primary hover:bg-orange-600 text-white px-10 py-2.5 rounded-lg transition-all font-bold shadow-lg shadow-orange-900/20 disabled:opacity-50">
-                        <Save size={20} /> {loading ? 'Kaydediliyor...' : 'Kaydet'}
+                    <button type="button" onClick={onCancel} className="px-6 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                        {isReadOnly ? 'Kapat' : 'İptal'}
                     </button>
+                    {!isReadOnly && (
+                        <button type="submit" disabled={loading} className="flex items-center gap-2 bg-primary hover:bg-orange-600 text-white px-10 py-2.5 rounded-lg transition-all font-bold shadow-lg shadow-orange-900/20 disabled:opacity-50">
+                            <Save size={20} /> {loading ? 'Kaydediliyor...' : saveButtonText}
+                        </button>
+                    )}
                 </div>
             </form>
         </div>
+
     );
 };
 

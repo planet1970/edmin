@@ -27,6 +27,7 @@ import { Toaster } from 'react-hot-toast';
 
 import VisitorsManager from './pages/VisitorsManager';
 import ContactMessagesManager from './pages/ContactMessagesManager';
+import DraftsManagement from './pages/DraftsManagement';
 
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     <div className="flex min-h-screen bg-secondary font-sans text-gray-900">
@@ -69,6 +70,7 @@ const App: React.FC = () => {
                                         <Route path="/database-manager/:tableName" element={<DbTableViewer />} />
                                         <Route path="/onboarding" element={<OnboardingManager />} />
                                         <Route path="/contact" element={<ContactMessagesManager />} />
+                                        <Route path="/drafts" element={<DraftsManagement />} />
                                         <Route path="/users" element={<UserManager />} />
                                         <Route path="/visitors" element={<VisitorsManager />} />
                                         <Route path="/user-types" element={<UserTypeManager />} />

@@ -244,7 +244,7 @@ const PageDesign: React.FC = () => {
         }
     };
 
-    const handleSaveFood = async (payload: any) => {
+    const handleSaveFood = async (payload: any, file?: File, backFile?: File) => {
         setLoading(true);
         try {
             // Prisma'ya gönderilmemesi gereken alanları temizle
@@ -256,9 +256,9 @@ const PageDesign: React.FC = () => {
             };
 
             if (id) {
-                await foodPlacesService.update(id, finalPayload, selectedFoodFile || undefined, selectedFoodBackFile || undefined);
+                await foodPlacesService.update(id, finalPayload, file, backFile);
             } else {
-                await foodPlacesService.create(finalPayload, selectedFoodFile || undefined, selectedFoodBackFile || undefined);
+                await foodPlacesService.create(finalPayload, file, backFile);
             }
             setIsFormVisible(false);
             setFoodFormData(null);
@@ -620,38 +620,6 @@ const PageDesign: React.FC = () => {
                         activeFormType === 'FOOD_PLACE' ? (
                             <div className="space-y-6">
                                 <div className="bg-white p-8 rounded-xl shadow-lg border border-primary/10">
-                                    <h3 className="font-bold text-gray-800 mb-6 border-b pb-4">Görsel Yükleme</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                                        <div className="space-y-3">
-                                            <label className="block text-sm font-bold text-gray-700">Ana Sayfa Görsel</label>
-                                            {(selectedFoodFile || foodFormData?.imageUrl) && (
-                                                <img
-                                                    src={selectedFoodFile ? URL.createObjectURL(selectedFoodFile) : getImageUrl(foodFormData?.imageUrl)}
-                                                    className="w-full h-48 object-cover rounded-xl border"
-                                                />
-                                            )}
-                                            <label className="flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-primary hover:bg-primary/5 transition-all text-gray-500">
-                                                <Upload size={20} /> <span>{selectedFoodFile ? selectedFoodFile.name : 'Görsel Seç'}</span>
-                                                <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && setSelectedFoodFile(e.target.files[0])} />
-                                            </label>
-                                            <p className="text-[10px] text-gray-400 mt-1">Önerilen: 800x600px</p>
-                                        </div>
-                                        <div className="space-y-3">
-                                            <label className="block text-sm font-bold text-gray-700">Devamını Oku Görsel</label>
-                                            {(selectedFoodBackFile || foodFormData?.backImageUrl) && (
-                                                <img
-                                                    src={selectedFoodBackFile ? URL.createObjectURL(selectedFoodBackFile) : getImageUrl(foodFormData?.backImageUrl)}
-                                                    className="w-full h-48 object-cover rounded-xl border"
-                                                />
-                                            )}
-                                            <label className="flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-primary hover:bg-primary/5 transition-all text-gray-500">
-                                                <Upload size={20} /> <span>{selectedFoodBackFile ? selectedFoodBackFile.name : 'Görsel Seç'}</span>
-                                                <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && setSelectedFoodBackFile(e.target.files[0])} />
-                                            </label>
-                                            <p className="text-[10px] text-gray-400 mt-1">Önerilen: 800x600px</p>
-                                        </div>
-                                    </div>
-
                                     <FoodPlaceForm
                                         data={foodFormData || {}}
                                         onSave={handleSaveFood}

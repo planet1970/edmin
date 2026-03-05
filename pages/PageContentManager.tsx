@@ -1,206 +1,185 @@
 import React, { useState, useEffect } from 'react';
 import {
-    Plus, Trash2, Edit2, Save, XCircle, FileText, ArrowRight, Filter, AlertCircle, User as UserIcon
+    Plus, Trash2, Save, XCircle, FileText, ArrowRight, Filter, AlertCircle, User as UserIcon, Shield
 } from 'lucide-react';
 import {
-    Category, SubCategory, PageContent, User
+    Category, SubCategory, User, Place, FoodPlace
 } from '../types';
 import { categoriesService } from '../services/categories';
 import { subcategoriesService } from '../services/subcategories';
-
-const STORAGE_KEY_CONTENTS = 'ems_contents';
-const STORAGE_KEY_USERS = 'ems_users';
-
-const PAGE_DESIGN_LABELS: Record<string, string> = {
-    'historical-places': 'Tarihi Mekan',
-    'museums': 'Müzeler'
-};
+import { pageAuthoritiesService, AssignedCustomer } from '../services/pageAuthorities';
+import { placesService } from '../services/places';
+import { foodPlacesService } from '../services/foodPlaces';
+import { toast } from 'react-hot-toast';
 
 const PageContentManager: React.FC = () => {
-    // --- LOADED DATA STATES ---
+    // --- DATA STATES ---
     const [categories, setCategories] = useState<Category[]>([]);
     const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
-    const [users, setUsers] = useState<User[]>([]);
+    const [allCustomers, setAllCustomers] = useState<any[]>([]);
+    const [assignments, setAssignments] = useState<AssignedCustomer[]>([]);
 
-    // --- CONTENT DATA STATE ---
-    const [contents, setContents] = useState<PageContent[]>([]);
+    // For Assignment Form
+    const [places, setPlaces] = useState<Place[]>([]);
+    const [foodPlaces, setFoodPlaces] = useState<FoodPlace[]>([]);
 
     // --- UI STATE ---
-    const [isEditing, setIsEditing] = useState<boolean>(false);
+    const [isAdding, setIsAdding] = useState<boolean>(false);
+    const [loading, setLoading] = useState<boolean>(false);
+
+    // Filters (List View)
     const [filterCatId, setFilterCatId] = useState<string>('');
     const [filterSubCatId, setFilterSubCatId] = useState<string>('');
 
-    // --- FORM STATE ---
-    const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
-    const [selectedSubCategoryId, setSelectedSubCategoryId] = useState<string>('');
-    const [selectedOwnerId, setSelectedOwnerId] = useState<string>('');
-
-    // Derived Info
-    const [activePageDesign, setActivePageDesign] = useState<string | null>(null);
-
-    // Actual Form Data (Key-Value) - kept for compatibility if needed, mostly unused now?
-    const [formData, setFormData] = useState<Record<string, any>>({});
-    const [editingContentId, setEditingContentId] = useState<string | null>(null);
-    const [editingStatus, setEditingStatus] = useState<'draft' | 'published'>('draft');
+    // Form State (Assignment)
+    const [selectedCatId, setSelectedCatId] = useState<string>('');
+    const [selectedSubCatId, setSelectedSubCatId] = useState<string>('');
+    const [selectedPage, setSelectedPage] = useState<{ id: string | number, type: 'PLACE' | 'FOOD_PLACE' } | null>(null);
+    const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
 
     // --- INITIAL LOAD ---
     useEffect(() => {
-        const loadData = async () => {
-            try {
-                const cats = await categoriesService.list();
-                setCategories(cats);
-
-                // Fetch all subcategories? Or fetch when category selected?
-                // For filter lists, we might need all. Or iterate categories.
-                // subcategoriesService.list() takes categoryId.
-                // Let's fetch all by iterating cats? Or fetch lazily.
-                // For now, let's just load categories. Subcategories loaded when category selected.
-                // But wait, for the LIST view, we need subcategory names.
-                // We can fetch subcategories for the selected filter or all.
-                // To simplify, let's fetch all subcategories flat list if possible, or fetch active ones.
-                // Actually, subcategoriesService.list takes optional categoryId.
-                // If API supports listing all without ID, good. If not, we might miss some in list view names.
-                // Let's assume we fetch all for now or handle it.
-                // Checking service: list(categoryId?: string). If API handles no param -> all.
-                const allSubs = await subcategoriesService.list();
-                setSubCategories(allSubs);
-
-            } catch (e) {
-                console.error("Failed to load categories/subcategories", e);
-            }
-        };
-        loadData();
-
-        const loadLS = (key: string, setter: React.Dispatch<React.SetStateAction<any>>) => {
-            const item = localStorage.getItem(key);
-            if (item) setter(JSON.parse(item));
-        };
-
-        loadLS(STORAGE_KEY_CONTENTS, setContents);
-        loadLS(STORAGE_KEY_USERS, setUsers);
+        loadBasicData();
+        loadAssignments();
     }, []);
 
-    // --- SAVE CONTENTS ---
-    useEffect(() => {
-        if (contents.length > 0) {
-            localStorage.setItem(STORAGE_KEY_CONTENTS, JSON.stringify(contents));
+    const loadBasicData = async () => {
+        try {
+            const [cats, custs] = await Promise.all([
+                categoriesService.list(),
+                pageAuthoritiesService.getCustomers()
+            ]);
+            setCategories(cats);
+            setAllCustomers(custs);
+
+            // Fetch all subcategories for filtering
+            const allSubs = await subcategoriesService.list();
+            setSubCategories(allSubs);
+        } catch (e) {
+            console.error("Data load error:", e);
         }
-    }, [contents]);
+    };
 
-    // --- HELPERS ---
-    const getCategory = (id: string) => categories.find(c => c.id === id);
-    const getSubCategory = (id: string) => subCategories.find(s => s.id === id);
-    const getUser = (id: string) => users.find(u => u.id === id);
-
-    // Filter users to get only Customers
-    const customerUsers = users.filter(u => u.roleId === 'role_customer');
+    const loadAssignments = async () => {
+        setLoading(true);
+        try {
+            const data = await pageAuthoritiesService.getAssignedCustomers();
+            setAssignments(data);
+        } catch (e) {
+            toast.error('Yetkilendirmeler yüklenemedi');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // --- FORM LOGIC ---
-
-    // Detect Page Design when SubCategory changes
     useEffect(() => {
-        if (selectedSubCategoryId) {
-            const sub = subCategories.find(s => s.id === selectedSubCategoryId);
-            if (sub && sub.pageDesign) {
-                setActivePageDesign(sub.pageDesign);
-            } else {
-                setActivePageDesign(null);
-            }
+        if (selectedSubCatId) {
+            loadPagesForSubCategory(selectedSubCatId);
         } else {
-            setActivePageDesign(null);
+            setPlaces([]);
+            setFoodPlaces([]);
         }
-    }, [selectedSubCategoryId, subCategories]);
+    }, [selectedSubCatId]);
+
+    const loadPagesForSubCategory = async (subId: string) => {
+        try {
+            const [p, f] = await Promise.all([
+                placesService.list(subId),
+                foodPlacesService.list(Number(subId))
+            ]);
+            setPlaces(p);
+            setFoodPlaces(f);
+        } catch (e) {
+            console.error("Pages list error:", e);
+        }
+    };
 
     // --- ACTIONS ---
-    const handleAddNew = () => {
-        setIsEditing(true);
-        setEditingContentId(null);
-        setSelectedCategoryId('');
-        setSelectedSubCategoryId('');
-        setSelectedOwnerId('');
-        setEditingStatus('draft');
-        setFormData({});
-    };
-
-    const handleEdit = (content: PageContent) => {
-        setIsEditing(true);
-        setEditingContentId(content.id);
-        setSelectedCategoryId(content.categoryId);
-        // Ensure subcategories are loaded for this category?
-        // We loaded all subs in init, hopefully.
-        setSelectedSubCategoryId(content.subCategoryId);
-        setSelectedOwnerId(content.ownerId || '');
-        setEditingStatus(content.status || 'draft');
-        setFormData(content.data);
-    };
-
-    const handleDelete = (id: string) => {
-        if (window.confirm('Bu yetkilendirmeyi silmek istediğinize emin misiniz?')) {
-            const newContents = contents.filter(c => c.id !== id);
-            setContents(newContents);
-            localStorage.setItem(STORAGE_KEY_CONTENTS, JSON.stringify(newContents));
-        }
-    };
-
-    const handleSave = () => {
-        if (!selectedCategoryId || !selectedSubCategoryId) {
-            alert('Kategori ve Alt Kategori seçilmelidir.');
+    const handleAddAssignment = async () => {
+        if (!selectedPage || !selectedCustomerId) {
+            toast.error('Lütfen bir sayfa ve bir müşteri seçiniz');
             return;
         }
 
-        const newContent: PageContent = {
-            id: editingContentId || Date.now().toString(),
-            categoryId: selectedCategoryId,
-            subCategoryId: selectedSubCategoryId,
-            pageDefinitionId: activePageDesign || '', // Storing pageDesign string here
-            ownerId: selectedOwnerId,
-            status: editingStatus,
-            data: formData, // Keeping data just in case, though maybe unused
-            createdAt: new Date().toISOString()
-        };
-
-        if (editingContentId) {
-            setContents(prev => prev.map(c => c.id === editingContentId ? newContent : c));
-        } else {
-            setContents(prev => [...prev, newContent]);
+        try {
+            setLoading(true);
+            await pageAuthoritiesService.addAuthority(
+                selectedPage.type,
+                Number(selectedPage.id),
+                Number(selectedCustomerId)
+            );
+            toast.success('Yetki başarıyla atandı');
+            setIsAdding(false);
+            resetForm();
+            loadAssignments();
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Yetkili zaten atanmış veya bir hata oluştu');
+        } finally {
+            setLoading(false);
         }
+    };
 
-        setIsEditing(false);
-        setEditingContentId(null);
-        setFormData({});
+    const handleDelete = async (id: number) => {
+        if (!window.confirm('Bu yetkiyi kaldırmak istediğinize emin misiniz?')) return;
+
+        try {
+            await pageAuthoritiesService.removeAuthority(id);
+            toast.success('Yetki kaldırıldı');
+            loadAssignments();
+        } catch (error) {
+            toast.error('Yetki kaldırılamadı');
+        }
+    };
+
+    const resetForm = () => {
+        setSelectedCatId('');
+        setSelectedSubCatId('');
+        setSelectedPage(null);
+        setSelectedCustomerId('');
     };
 
     // --- FILTERED LIST ---
-    const filteredContents = contents.filter(c => {
-        if (filterCatId && c.categoryId !== filterCatId) return false;
-        if (filterSubCatId && c.subCategoryId !== filterSubCatId) return false;
+    const filteredAssignments = assignments.filter(a => {
+        if (filterCatId && String(a.categoryId) !== filterCatId) return false;
+        if (filterSubCatId && String(a.subCategoryId) !== filterSubCatId) return false;
         return true;
     });
+
+    const getCategoryTitle = (id: any) => {
+        if (!id) return "Yükleniyor...";
+        return categories.find(c => String(c.id) === String(id))?.title || `Kategori ${id}`;
+    };
+    const getSubCategoryTitle = (id: any) => {
+        if (!id) return "Yükleniyor...";
+        return subCategories.find(s => String(s.id) === String(id))?.title || `Alt Kategori ${id}`;
+    };
 
     return (
         <div className="p-6">
             <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800">Sayfa Yetkili</h1>
-                    <p className="text-sm text-gray-500">Ticari sayfalar için yetkili tanımlama.</p>
+                    <h1 className="text-2xl font-bold text-gray-800">Sayfa Yetkili Yönetimi</h1>
+                    <p className="text-sm text-gray-500">Müşterilerin yöneteceği sayfaları eşleştirin.</p>
                 </div>
-                {!isEditing && (
+                {!isAdding && (
                     <button
-                        onClick={handleAddNew}
-                        className="flex items-center gap-2 bg-primary hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition-colors font-medium shadow-sm"
+                        onClick={() => setIsAdding(true)}
+                        className="flex items-center gap-2 bg-primary hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition-colors font-medium shadow-md"
                     >
-                        <Plus size={18} /> Yeni
+                        <Plus size={18} /> Yeni Yetki Ata
                     </button>
                 )}
             </div>
 
-            {isEditing ? (
+            {isAdding ? (
                 <div className="bg-white p-6 rounded-xl shadow-lg border border-primary/20 mb-8 animate-fadeIn max-w-4xl mx-auto">
                     <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-3">
-                        <h2 className="text-lg font-bold text-gray-800">
-                            {editingContentId ? 'Yetkilendirmeyi Düzenle' : 'Yeni Yetkilendirme'}
-                        </h2>
-                        <button onClick={() => setIsEditing(false)} className="text-gray-400 hover:text-gray-600">
+                        <div className="flex items-center gap-2">
+                            <Shield className="text-primary" />
+                            <h2 className="text-lg font-bold text-gray-800">Yeni Yetkilendirme</h2>
+                        </div>
+                        <button onClick={() => { setIsAdding(false); resetForm(); }} className="text-gray-400 hover:text-gray-600">
                             <XCircle size={24} />
                         </button>
                     </div>
@@ -209,128 +188,122 @@ const PageContentManager: React.FC = () => {
                         <div>
                             <label className="block text-xs font-bold text-gray-500 uppercase mb-2">1. Kategori</label>
                             <select
-                                value={selectedCategoryId}
+                                value={selectedCatId}
                                 onChange={(e) => {
-                                    setSelectedCategoryId(e.target.value);
-                                    setSelectedSubCategoryId('');
+                                    setSelectedCatId(e.target.value);
+                                    setSelectedSubCatId('');
+                                    setSelectedPage(null);
                                 }}
-                                disabled={!!editingContentId}
-                                className={`w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-primary bg-white ${!!editingContentId ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-primary bg-white"
                             >
-                                <option value="">Seçiniz...</option>
+                                <option value="">Kategori Seçin...</option>
                                 {categories.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
                             </select>
                         </div>
                         <div>
                             <label className="block text-xs font-bold text-gray-500 uppercase mb-2">2. Alt Kategori</label>
                             <select
-                                value={selectedSubCategoryId}
-                                onChange={(e) => setSelectedSubCategoryId(e.target.value)}
-                                disabled={!selectedCategoryId || !!editingContentId}
-                                className={`w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-primary bg-white ${(!selectedCategoryId || !!editingContentId) ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                value={selectedSubCatId}
+                                onChange={(e) => {
+                                    setSelectedSubCatId(e.target.value);
+                                    setSelectedPage(null);
+                                }}
+                                disabled={!selectedCatId}
+                                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-primary bg-white disabled:bg-gray-50"
                             >
-                                <option value="">Seçiniz...</option>
+                                <option value="">Alt Kategori Seçin...</option>
                                 {subCategories
-                                    .filter(s => s.categoryId.toString() === selectedCategoryId)
+                                    .filter(s => String(s.categoryId) === selectedCatId)
                                     .map(s => <option key={s.id} value={s.id}>{s.title}</option>)
                                 }
                             </select>
                         </div>
-                        <div>
+                        <div className="col-span-full">
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">3. Sayfa / Mekan Seçin</label>
+                            <select
+                                value={selectedPage ? `${selectedPage.type}:${selectedPage.id}` : ''}
+                                onChange={(e) => {
+                                    const [type, id] = e.target.value.split(':');
+                                    setSelectedPage({ type: type as any, id });
+                                }}
+                                disabled={!selectedSubCatId}
+                                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-primary bg-white disabled:bg-gray-50"
+                            >
+                                <option value="">Bir Sayfa Seçin...</option>
+                                {places.length > 0 && <optgroup label="Standart Mekanlar">
+                                    {places.map(p => <option key={`P-${p.id}`} value={`PLACE:${p.id}`}>{p.title}</option>)}
+                                </optgroup>}
+                                {foodPlaces.length > 0 && <optgroup label="Yeme & İçme">
+                                    {foodPlaces.map(f => <option key={`F-${f.id}`} value={`FOOD_PLACE:${f.id}`}>{f.title}</option>)}
+                                </optgroup>}
+                            </select>
+                        </div>
+                        <div className="col-span-full">
                             <label className="block text-xs font-bold text-gray-500 uppercase mb-2 flex items-center gap-1">
-                                <UserIcon size={14} /> Sayfa Yetkilisi
+                                <UserIcon size={14} /> 4. Müşteri (Yetkili)
                             </label>
                             <select
-                                value={selectedOwnerId}
-                                onChange={(e) => setSelectedOwnerId(e.target.value)}
+                                value={selectedCustomerId}
+                                onChange={(e) => setSelectedCustomerId(e.target.value)}
                                 className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-primary bg-white"
                             >
-                                <option value="">Yetkili Yok</option>
-                                {customerUsers.map(u => (
-                                    <option key={u.id} value={u.id}>{u.fullName} ({u.email})</option>
+                                <option value="">Bir Müşteri Seçin...</option>
+                                {allCustomers.map(u => (
+                                    <option key={u.id} value={u.id}>{u.name || u.email}</option>
                                 ))}
                             </select>
-                            <p className="text-[10px] text-gray-400 mt-1">Sadece 'Customer' tipindeki kullanıcılar listelenir.</p>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Durum</label>
-                            <select
-                                value={editingStatus}
-                                onChange={(e) => setEditingStatus(e.target.value as 'draft' | 'published')}
-                                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-primary bg-white"
-                            >
-                                <option value="draft">Taslak</option>
-                                <option value="published">Yayında</option>
-                            </select>
                         </div>
                     </div>
 
-                    {/* Assigned Page Info */}
-                    <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
-                        <div className="flex items-center gap-2">
-                            <span className="font-bold text-gray-700">Atanan Sayfa:</span>
-                            {activePageDesign ? (
-                                <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium flex items-center gap-1">
-                                    <FileText size={14} /> {PAGE_DESIGN_LABELS[activePageDesign] || activePageDesign}
-                                </span>
-                            ) : (
-                                <span className="text-gray-400 italic text-sm">
-                                    {selectedCategoryId && selectedSubCategoryId
-                                        ? 'Bu alt kategori için bir tasarım atanmamış.'
-                                        : 'Kategori seçimi bekleniyor...'}
-                                </span>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-gray-50">
+                    <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-gray-100">
                         <button
-                            onClick={() => setIsEditing(false)}
+                            onClick={() => { setIsAdding(false); resetForm(); }}
                             className="px-6 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg font-medium"
                         >
                             İptal
                         </button>
                         <button
-                            onClick={handleSave}
-                            disabled={!selectedSubCategoryId}
-                            className={`flex items-center gap-2 px-8 py-2 rounded-lg font-medium transition-all ${selectedSubCategoryId
-                                    ? 'bg-primary text-white hover:bg-orange-600 shadow-md'
-                                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                            onClick={handleAddAssignment}
+                            disabled={loading || !selectedPage || !selectedCustomerId}
+                            className={`flex items-center gap-2 px-8 py-2 rounded-lg font-medium transition-all ${(!loading && selectedPage && selectedCustomerId)
+                                ? 'bg-primary text-white hover:bg-orange-600 shadow-md'
+                                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                                 }`}
                         >
-                            <Save size={18} /> Kaydet
+                            <Save size={18} /> {loading ? 'Atanıyor...' : 'Yetki Ata'}
                         </button>
                     </div>
-
                 </div>
             ) : (
                 /* LIST VIEW */
                 <div className="space-y-4">
                     {/* Filter Bar */}
-                    <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row gap-4 items-center">
+                    <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row gap-4 items-center animate-fadeIn">
                         <div className="flex items-center gap-2 text-gray-500 font-medium">
                             <Filter size={18} /> Filtrele:
                         </div>
-                        <select
-                            value={filterCatId}
-                            onChange={(e) => { setFilterCatId(e.target.value); setFilterSubCatId(''); }}
-                            className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-primary"
-                        >
-                            <option value="">Tüm Kategoriler</option>
-                            {categories.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
-                        </select>
-                        <select
-                            value={filterSubCatId}
-                            onChange={(e) => setFilterSubCatId(e.target.value)}
-                            disabled={!filterCatId}
-                            className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-primary disabled:bg-gray-100"
-                        >
-                            <option value="">Tüm Alt Kategoriler</option>
-                            {subCategories
-                                .filter(s => s.categoryId.toString() === filterCatId)
-                                .map(s => <option key={s.id} value={s.id}>{s.title}</option>)
-                            }
-                        </select>
+                        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+                            <select
+                                value={filterCatId}
+                                onChange={(e) => { setFilterCatId(e.target.value); setFilterSubCatId(''); }}
+                                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-primary bg-white"
+                            >
+                                <option value="">Tüm Kategoriler</option>
+                                {categories.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+                            </select>
+                            <select
+                                value={filterSubCatId}
+                                onChange={(e) => setFilterSubCatId(e.target.value)}
+                                disabled={!filterCatId}
+                                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-primary bg-white disabled:bg-gray-50"
+                            >
+                                <option value="">Tüm Alt Kategoriler</option>
+                                {subCategories
+                                    .filter(s => String(s.categoryId) === filterCatId)
+                                    .map(s => <option key={s.id} value={s.id}>{s.title}</option>)
+                                }
+                            </select>
+                        </div>
                     </div>
 
                     {/* Table */}
@@ -338,75 +311,69 @@ const PageContentManager: React.FC = () => {
                         <table className="w-full text-left border-collapse">
                             <thead className="bg-gray-50 text-gray-500 font-medium text-xs uppercase border-b border-gray-200">
                                 <tr>
-                                    <th className="px-6 py-4">Kategori</th>
-                                    <th className="px-6 py-4">Alt Kategori</th>
-                                    <th className="px-6 py-4">Yetkili</th>
+                                    <th className="px-6 py-4">Müşteri (Owner)</th>
+                                    <th className="px-6 py-4">Kategori / Alt Kategori</th>
                                     <th className="px-6 py-4">Atanan Sayfa</th>
-                                    <th className="px-6 py-4">Durum</th>
+                                    <th className="px-6 py-4">Tip</th>
                                     <th className="px-6 py-4 text-right">İşlemler</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
-                                {filteredContents.length === 0 ? (
+                                {loading ? (
                                     <tr>
-                                        <td colSpan={6} className="px-6 py-12 text-center text-gray-400">
+                                        <td colSpan={5} className="px-6 py-12 text-center text-gray-400 italic">Yükleniyor...</td>
+                                    </tr>
+                                ) : filteredAssignments.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={5} className="px-6 py-12 text-center text-gray-400">
                                             <div className="flex flex-col items-center">
-                                                <FileText size={48} className="text-gray-200 mb-3" />
+                                                <Shield size={48} className="text-gray-100 mb-3" />
                                                 <p>Görüntülenecek yetkilendirme bulunamadı.</p>
                                             </div>
                                         </td>
                                     </tr>
                                 ) : (
-                                    filteredContents.map(content => {
-                                        const cat = getCategory(content.categoryId);
-                                        const sub = getSubCategory(content.subCategoryId);
-                                        const owner = getUser(content.ownerId || '');
-                                        const pageDesign = content.pageDefinitionId; // Using this field for pageDesign string
-
-                                        return (
-                                            <tr key={content.id} className="hover:bg-gray-50 transition-colors">
-                                                <td className="px-6 py-4 font-medium text-gray-800">
-                                                    {cat?.title || content.categoryId}
-                                                </td>
-                                                <td className="px-6 py-4 flex items-center gap-2 text-gray-600">
-                                                    <ArrowRight size={14} className="text-gray-300" />
-                                                    {sub?.title || content.subCategoryId}
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    {owner ? (
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="w-6 h-6 rounded-full bg-orange-100 text-primary flex items-center justify-center text-xs font-bold">
-                                                                {owner.fullName.charAt(0)}
-                                                            </div>
-                                                            <span className="text-sm text-gray-700">{owner.fullName}</span>
-                                                        </div>
-                                                    ) : (
-                                                        <span className="text-gray-400 text-xs">-</span>
-                                                    )}
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <span className="inline-block px-2 py-1 rounded text-sm text-gray-600 bg-gray-100">
-                                                        {PAGE_DESIGN_LABELS[pageDesign] || pageDesign || '-'}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${content.status === 'published' ? 'bg-green-50 text-green-600 border-green-200' : 'bg-yellow-50 text-yellow-600 border-yellow-200'}`}>
-                                                        {content.status === 'published' ? 'YAYINDA' : 'TASLAK'}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <div className="flex justify-end gap-2">
-                                                        <button onClick={() => handleEdit(content)} className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors">
-                                                            <Edit2 size={18} />
-                                                        </button>
-                                                        <button onClick={() => handleDelete(content.id)} className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors">
-                                                            <Trash2 size={18} />
-                                                        </button>
+                                    filteredAssignments.map(item => (
+                                        <tr key={item.id} className="hover:bg-gray-50/80 transition-colors group">
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">
+                                                        {item.userName.charAt(0).toUpperCase()}
                                                     </div>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })
+                                                    <div>
+                                                        <div className="font-bold text-gray-800">{item.userName}</div>
+                                                        <div className="text-[10px] text-gray-400 font-mono">ID: {item.userId}</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex flex-col gap-1">
+                                                    <span className="text-xs font-medium text-gray-500">{getCategoryTitle(item.categoryId)}</span>
+                                                    <div className="flex items-center gap-1 text-sm text-gray-700 font-semibold">
+                                                        <ArrowRight size={14} className="text-gray-300" />
+                                                        {getSubCategoryTitle(item.subCategoryId)}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 font-bold text-gray-800">
+                                                {item.pageTitle}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className={`px-2 py-1 rounded text-[10px] font-bold border ${item.pageType === 'FOOD_PLACE' ? 'bg-orange-50 text-orange-600 border-orange-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
+                                                    {item.pageType === 'FOOD_PLACE' ? 'YEME/İÇME' : 'MEKAN'}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <button
+                                                    onClick={() => handleDelete(item.id)}
+                                                    className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                    title="Yetkiyi Kaldır"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
                                 )}
                             </tbody>
                         </table>
@@ -414,9 +381,9 @@ const PageContentManager: React.FC = () => {
                 </div>
             )}
 
-            <div className="mt-4 flex items-center gap-2 text-xs text-gray-400">
+            <div className="mt-4 flex items-center gap-2 text-xs text-gray-400 italic">
                 <AlertCircle size={14} />
-                <span>Bu sayfadaki veriler tarayıcınızın yerel hafızasında (localStorage) saklanmaktadır.</span>
+                <span>Bir müşteri birden fazla sayfaya yetkili olarak atanabilir.</span>
             </div>
         </div>
     );
