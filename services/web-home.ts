@@ -113,4 +113,15 @@ export const webHomeService = {
     reorderAboutCards: async (ids: number[]) => {
         return api.post('/web-home/about/cards/reorder', ids);
     },
+
+    // Ads
+    getStories: async () => {
+        return api.get<any[]>('/web-home/ads/story');
+    },
+    getFeatured: async () => {
+        return api.get<any[]>('/web-home/ads/featured');
+    },
+    getPopular: async () => {
+        return api.get<any[]>('/web-home/ads/popular');
+    },
 };

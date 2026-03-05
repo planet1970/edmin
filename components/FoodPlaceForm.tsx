@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
 import { Save, X, Upload, CheckCircle, XCircle, UtensilsCrossed } from 'lucide-react';
 import { FoodPlace } from '../types';
+import { getImageUrl } from '../services/api';
 
 interface Props {
     data: Partial<FoodPlace>;
-    onSave: (payload: any) => Promise<void>;
+    onSave: (payload: any, file?: File, backFile?: File) => Promise<void>;
     onCancel: () => void;
     loading: boolean;
 }
 
 const FoodPlaceForm: React.FC<Props> = ({ data, onSave, onCancel, loading }) => {
     const [formData, setFormData] = useState<Partial<FoodPlace>>(data);
+    const [file, setFile] = useState<File | null>(null);
+    const [backFile, setBackFile] = useState<File | null>(null);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
@@ -24,7 +27,7 @@ const FoodPlaceForm: React.FC<Props> = ({ data, onSave, onCancel, loading }) => 
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSave(formData);
+        onSave(formData, file || undefined, backFile || undefined);
     };
 
     return (
@@ -39,6 +42,35 @@ const FoodPlaceForm: React.FC<Props> = ({ data, onSave, onCancel, loading }) => 
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                    <div className="space-y-3">
+                        <label className="block text-sm font-bold text-gray-700">Ana Sayfa Görsel</label>
+                        {(file || formData.imageUrl) && (
+                            <img
+                                src={file ? URL.createObjectURL(file) : getImageUrl(formData.imageUrl)}
+                                className="w-full h-48 object-cover rounded-xl border"
+                            />
+                        )}
+                        <label className="flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-primary hover:bg-primary/5 transition-all text-gray-500">
+                            <Upload size={20} /> <span>{file ? file.name : 'Görsel Seç'}</span>
+                            <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && setFile(e.target.files[0])} />
+                        </label>
+                    </div>
+                    <div className="space-y-3">
+                        <label className="block text-sm font-bold text-gray-700">Arka Sayfa Görsel</label>
+                        {(backFile || formData.backImageUrl) && (
+                            <img
+                                src={backFile ? URL.createObjectURL(backFile) : getImageUrl(formData.backImageUrl)}
+                                className="w-full h-48 object-cover rounded-xl border"
+                            />
+                        )}
+                        <label className="flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-primary hover:bg-primary/5 transition-all text-gray-500">
+                            <Upload size={20} /> <span>{backFile ? backFile.name : 'Görsel Seç'}</span>
+                            <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && setBackFile(e.target.files[0])} />
+                        </label>
+                    </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Mekan Adı</label>

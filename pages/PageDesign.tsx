@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Edit2, Trash2, CheckCircle, XCircle, Upload, Save, GripVertical, Layers, Filter, ArrowRight, ArrowLeft, Megaphone, Star, Check } from 'lucide-react';
+import { Plus, Edit2, Trash2, CheckCircle, XCircle, Upload, Save, GripVertical, Layers, Filter, ArrowRight, ArrowLeft, Megaphone, Star, Check, User, Users, Shield, UserPlus, Info } from 'lucide-react';
 import { API_BASE_URL, getImageUrl, api } from '../services/api';
 import { Category, SubCategory, Place, PageLink, FoodPlace } from '../types';
 import { placesService } from '../services/places';
@@ -7,8 +7,11 @@ import { pageLinksService } from '../services/pageLinks';
 import { categoriesService } from '../services/categories';
 import { subcategoriesService } from '../services/subcategories';
 import { foodPlacesService } from '../services/foodPlaces';
+import { pageAuthoritiesService, PageAuthority } from '../services/pageAuthorities';
+import { webHomeService } from '../services/web-home';
 import IconPicker from '../components/IconPicker';
 import FoodPlaceForm from '../components/FoodPlaceForm';
+import SearchableSelect from '../components/SearchableSelect';
 import { toast } from 'react-hot-toast';
 
 const initialState: Place = {
@@ -72,6 +75,24 @@ const PageDesign: React.FC = () => {
     const [foodPlaces, setFoodPlaces] = useState<FoodPlace[]>([]);
     const [pageLinks, setPageLinks] = useState<PageLink[]>([]);
 
+    // --- ADS STATUS STATE ---
+    const [adsStatus, setAdsStatus] = useState<{
+        stories: Set<string>;
+        featured: Set<string>;
+        popular: Set<string>;
+    }>({
+        stories: new Set(),
+        featured: new Set(),
+        popular: new Set()
+    });
+
+    // --- AUTHORITIES STATE ---
+    const [isAuthModalVisible, setIsAuthModalVisible] = useState(false);
+    const [currentAuthItem, setCurrentAuthItem] = useState<{ id: number, type: 'PLACE' | 'FOOD_PLACE', title: string } | null>(null);
+    const [authorities, setAuthorities] = useState<PageAuthority[]>([]);
+    const [allCustomers, setAllCustomers] = useState<any[]>([]);
+    const [selectedCustomerId, setSelectedCustomerId] = useState<string | number | null>(null);
+
     // Form Management
     const [activeFormType, setActiveFormType] = useState<'PLACE' | 'FOOD_PLACE'>('PLACE');
     const [placeFormData, setPlaceFormData] = useState<Place>(initialState);
@@ -91,7 +112,27 @@ const PageDesign: React.FC = () => {
     useEffect(() => {
         categoriesService.list().then(setCategories).catch(console.error);
         pageLinksService.list().then(setPageLinks).catch(console.error);
+        pageAuthoritiesService.getCustomers().then(setAllCustomers).catch(console.error);
     }, []);
+
+    // --- LOAD ADS STATUS ---
+    const loadAdsStatus = async () => {
+        try {
+            const [stories, featured, popular] = await Promise.all([
+                webHomeService.getStories(),
+                webHomeService.getFeatured(),
+                webHomeService.getPopular()
+            ]);
+
+            setAdsStatus({
+                stories: new Set(stories.map(s => `${s.sourceType}-${s.sourceId}`)),
+                featured: new Set(featured.map(f => `${f.sourceType}-${f.sourceId}`)),
+                popular: new Set(popular.map(p => `${p.sourceType}-${p.sourceId}`))
+            });
+        } catch (error) {
+            console.error('Reklam durumları yüklenemedi:', error);
+        }
+    };
 
     // --- LOAD SUBCATEGORIES ---
     useEffect(() => {
@@ -114,7 +155,8 @@ const PageDesign: React.FC = () => {
             const subId = parseInt(selectedSubCategoryId, 10);
             const [pRes, fRes] = await Promise.all([
                 placesService.list(selectedSubCategoryId),
-                foodPlacesService.list(subId)
+                foodPlacesService.list(subId),
+                loadAdsStatus()
             ]);
             setPlaces(pRes);
             setFoodPlaces(fRes);
@@ -332,11 +374,61 @@ const PageDesign: React.FC = () => {
             await api.post(endpoint, payload);
             const typeLabel = { 'story': 'Hikayelere', 'featured': 'Öne Çıkanlara', 'popular': 'Popüler Mekanlara' }[type];
             toast.success(`${typeLabel} başarıyla eklendi!`);
+            await loadAdsStatus(); // Reload ads statuses
         } catch (err: any) {
             const errorLabel = type === 'popular' ? 'Mekan eklenirken' : 'Reklam eklenirken';
             toast.error(`${errorLabel} hata oluştu: ${err.message}`);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleOpenAuthModal = async (item: any, type: 'PLACE' | 'FOOD_PLACE') => {
+        setCurrentAuthItem({ id: Number(item.id), type, title: item.title });
+        setIsAuthModalVisible(true);
+        setSelectedCustomerId(null);
+        try {
+            const data = await pageAuthoritiesService.getAuthorities(type, Number(item.id));
+            setAuthorities(data);
+        } catch (error) {
+            console.error('Yetkililer yüklenemedi:', error);
+            toast.error('Yetkililer yüklenemedi');
+        }
+    };
+
+    const handleAddAuthority = async () => {
+        if (!currentAuthItem || !selectedCustomerId) {
+            toast.error('Lütfen bir müşteri seçin');
+            return;
+        }
+
+        try {
+            await pageAuthoritiesService.addAuthority(currentAuthItem.type, currentAuthItem.id, Number(selectedCustomerId));
+            toast.success('Yetkili başarıyla atandı');
+
+            // Reload authorities
+            const data = await pageAuthoritiesService.getAuthorities(currentAuthItem.type, currentAuthItem.id);
+            setAuthorities(data);
+            setSelectedCustomerId(null);
+        } catch (error: any) {
+            console.error('Yetkili atanamadı:', error);
+            toast.error(error.response?.data?.message || 'Yetkili atanamadı');
+        }
+    };
+
+    const handleRemoveAuthority = async (id: number) => {
+        if (!window.confirm('Bu yetkiyi kaldırmak istediğinize emin misiniz?')) return;
+
+        try {
+            await pageAuthoritiesService.removeAuthority(id);
+            toast.success('Yetki kaldırıldı');
+            if (currentAuthItem) {
+                const data = await pageAuthoritiesService.getAuthorities(currentAuthItem.type, currentAuthItem.id);
+                setAuthorities(data);
+            }
+        } catch (error) {
+            console.error('Yetki kaldırılamadı:', error);
+            toast.error('Yetki kaldırılamadı');
         }
     };
 
@@ -694,12 +786,13 @@ const PageDesign: React.FC = () => {
                                                         </td>
                                                         <td className="px-6 py-4 text-right">
                                                             <div className="flex justify-end gap-2">
-                                                                <button title="Hikayelere Ekle" onClick={() => handleAddToAds(place, 'story', 'PLACE')} className="p-2 text-orange-500 hover:bg-orange-50 rounded-lg transition-colors"><Megaphone size={18} /></button>
-                                                                <button title="Öne Çıkanlara Ekle" onClick={() => handleAddToAds(place, 'featured', 'PLACE')} className="p-2 text-yellow-500 hover:bg-yellow-50 rounded-lg transition-colors"><Star size={18} /></button>
-                                                                <button title="Popüler Mekanlara Ekle" onClick={() => handleAddToAds(place, 'popular', 'PLACE')} className="p-2 text-purple-500 hover:bg-purple-50 rounded-lg transition-colors"><Layers size={18} /></button>
+                                                                <button title="Hikayelere Ekle" onClick={() => handleAddToAds(place, 'story', 'PLACE')} className={`p-2 rounded-lg transition-colors ${adsStatus.stories.has(`PLACE-${place.id}`) ? 'text-orange-600 bg-orange-100' : 'text-gray-400 hover:text-orange-500 hover:bg-orange-50'}`}><Megaphone size={18} /></button>
+                                                                <button title="Öne Çıkanlara Ekle" onClick={() => handleAddToAds(place, 'featured', 'PLACE')} className={`p-2 rounded-lg transition-colors ${adsStatus.featured.has(`PLACE-${place.id}`) ? 'text-yellow-600 bg-yellow-100' : 'text-gray-400 hover:text-yellow-500 hover:bg-yellow-50'}`}><Star size={18} /></button>
+                                                                <button title="Popüler Mekanlara Ekle" onClick={() => handleAddToAds(place, 'popular', 'PLACE')} className={`p-2 rounded-lg transition-colors ${adsStatus.popular.has(`PLACE-${place.id}`) ? 'text-purple-600 bg-purple-100' : 'text-gray-400 hover:text-purple-500 hover:bg-purple-50'}`}><Layers size={18} /></button>
                                                                 <div className="w-px h-8 bg-gray-100 mx-1"></div>
-                                                                <button onClick={() => handleEditPlace(place)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Edit2 size={18} /></button>
-                                                                <button onClick={() => handleDeletePlace(place.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={18} /></button>
+                                                                <button title="Sayfa Yetkilileri" onClick={() => handleOpenAuthModal(place, 'PLACE')} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><User size={18} /></button>
+                                                                <button title="Düzenle" onClick={() => handleEditPlace(place)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Edit2 size={18} /></button>
+                                                                <button title="Sil" onClick={() => handleDeletePlace(place.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={18} /></button>
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -726,12 +819,13 @@ const PageDesign: React.FC = () => {
                                                         </td>
                                                         <td className="px-6 py-4 text-right">
                                                             <div className="flex justify-end gap-2">
-                                                                <button title="Hikayelere Ekle" onClick={() => handleAddToAds(food, 'story', 'FOOD_PLACE')} className="p-2 text-orange-500 hover:bg-orange-50 rounded-lg transition-colors"><Megaphone size={18} /></button>
-                                                                <button title="Öne Çıkanlara Ekle" onClick={() => handleAddToAds(food, 'featured', 'FOOD_PLACE')} className="p-2 text-yellow-500 hover:bg-yellow-50 rounded-lg transition-colors"><Star size={18} /></button>
-                                                                <button title="Popüler Mekanlara Ekle" onClick={() => handleAddToAds(food, 'popular', 'FOOD_PLACE')} className="p-2 text-purple-500 hover:bg-purple-50 rounded-lg transition-colors"><Layers size={18} /></button>
+                                                                <button title="Hikayelere Ekle" onClick={() => handleAddToAds(food, 'story', 'FOOD_PLACE')} className={`p-2 rounded-lg transition-colors ${adsStatus.stories.has(`FOOD_PLACE-${food.id}`) ? 'text-orange-600 bg-orange-100' : 'text-gray-400 hover:text-orange-500 hover:bg-orange-50'}`}><Megaphone size={18} /></button>
+                                                                <button title="Öne Çıkanlara Ekle" onClick={() => handleAddToAds(food, 'featured', 'FOOD_PLACE')} className={`p-2 rounded-lg transition-colors ${adsStatus.featured.has(`FOOD_PLACE-${food.id}`) ? 'text-yellow-600 bg-yellow-100' : 'text-gray-400 hover:text-yellow-500 hover:bg-yellow-50'}`}><Star size={18} /></button>
+                                                                <button title="Popüler Mekanlara Ekle" onClick={() => handleAddToAds(food, 'popular', 'FOOD_PLACE')} className={`p-2 rounded-lg transition-colors ${adsStatus.popular.has(`FOOD_PLACE-${food.id}`) ? 'text-purple-600 bg-purple-100' : 'text-gray-400 hover:text-purple-500 hover:bg-purple-50'}`}><Layers size={18} /></button>
                                                                 <div className="w-px h-8 bg-gray-100 mx-1"></div>
-                                                                <button onClick={() => handleEditFood(food)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Edit2 size={18} /></button>
-                                                                <button onClick={() => handleDeleteFood(food.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={18} /></button>
+                                                                <button title="Sayfa Yetkilileri" onClick={() => handleOpenAuthModal(food, 'FOOD_PLACE')} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><User size={18} /></button>
+                                                                <button title="Düzenle" onClick={() => handleEditFood(food)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Edit2 size={18} /></button>
+                                                                <button title="Sil" onClick={() => handleDeleteFood(food.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={18} /></button>
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -740,6 +834,77 @@ const PageDesign: React.FC = () => {
                                         )}
                                     </tbody>
                                 </table>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* AUTHORITY MODAL */}
+                    {isAuthModalVisible && currentAuthItem && (
+                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                            <div className="bg-white rounded-xl shadow-lg w-full max-w-xl p-6">
+                                <div className="flex justify-between items-center mb-6 border-b pb-4">
+                                    <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                        <Shield className="text-primary" /> Sayfa Yetkilileri
+                                    </h3>
+                                    <button onClick={() => setIsAuthModalVisible(false)}><XCircle size={24} className="text-gray-400 hover:text-gray-600" /></button>
+                                </div>
+
+                                <div className="mb-4 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                                    <div className="text-sm font-medium text-blue-800 flex items-center gap-2 mb-1">
+                                        <Info size={16} /> Seçili Mekan
+                                    </div>
+                                    <div className="text-sm text-blue-600 font-bold ml-6">
+                                        {currentAuthItem.title} <span className="text-[10px] font-normal opacity-70 ml-2 border border-blue-200 px-1.5 py-0.5 rounded-md">{currentAuthItem.type}</span>
+                                    </div>
+                                </div>
+
+                                <div className="mb-8 p-4 bg-gray-50 border border-gray-200 rounded-lg space-y-4 shadow-sm">
+                                    <h4 className="font-bold text-gray-700 text-sm border-b border-gray-200 pb-2">Yetkilendirilmiş Kullanıcılar</h4>
+                                    {authorities.length === 0 ? (
+                                        <div className="text-center py-4 text-gray-400 text-sm">Bu sayfa için henüz bir yetkili atanmamış.</div>
+                                    ) : (
+                                        <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
+                                            {authorities.map(auth => (
+                                                <div key={auth.id} className="flex justify-between items-center bg-white p-3 rounded border border-gray-200 shadow-sm">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold relative overflow-hidden">
+                                                            {auth.user.imageUrl ? <img src={auth.user.imageUrl} className="w-full h-full object-cover" /> : auth.user.name.charAt(0).toUpperCase()}
+                                                        </div>
+                                                        <div>
+                                                            <div className="font-bold text-xs text-gray-800">{auth.user.name || 'İsimsiz'}</div>
+                                                            <div className="text-[10px] text-gray-500">{auth.user.email}</div>
+                                                        </div>
+                                                    </div>
+                                                    <button onClick={() => handleRemoveAuthority(auth.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded" title="Yetkiyi Kaldır">
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <h4 className="font-bold text-gray-700 text-sm mb-3">Yeni Yetkili Ekle</h4>
+                                    <div className="flex gap-2">
+                                        <div className="flex-1">
+                                            <SearchableSelect
+                                                options={allCustomers.map(c => ({ id: c.id, label: c.name || 'İsimsiz', subLabel: c.email }))}
+                                                value={selectedCustomerId}
+                                                onChange={(id) => setSelectedCustomerId(id)}
+                                                placeholder="Müşteri (Customer) seçin..."
+                                            />
+                                        </div>
+                                        <button
+                                            onClick={handleAddAuthority}
+                                            disabled={!selectedCustomerId}
+                                            className="bg-primary hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition-colors font-medium flex items-center gap-2 disabled:opacity-50"
+                                        >
+                                            <UserPlus size={18} /> Ekle
+                                        </button>
+                                    </div>
+                                    <p className="text-[10px] text-gray-400 mt-2">Sadece CUSTOMER rolüne sahip kullanıcılar listelenmektedir.</p>
+                                </div>
                             </div>
                         </div>
                     )}
