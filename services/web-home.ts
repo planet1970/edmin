@@ -139,4 +139,24 @@ export const webHomeService = {
     incrementPopupView: async (id: number) => {
         return api.patch(`/web-home/ads/popup/${id}/view`, {});
     },
+
+    // --- NEWS MANAGEMENT ---
+    getNewsSettings: async () => {
+        return api.get('/web-home/news-settings');
+    },
+    updateNewsSettings: async (isActive: boolean) => {
+        return api.post('/web-home/news-settings', { isActive });
+    },
+    getAllNewsItems: async () => {
+        return api.get('/web-home/news-items');
+    },
+    createManualNews: async (data: { title: string, source: string, link: string, contentSnippet?: string }) => {
+        return api.post('/web-home/news-items', data);
+    },
+    toggleNewsItem: async (id: number, isActive: boolean) => {
+        return api.patch(`/web-home/news-items/${id}/toggle`, { isActive });
+    },
+    deleteNewsItem: async (id: number) => {
+        return api.delete(`/web-home/news-items/${id}`);
+    }
 };

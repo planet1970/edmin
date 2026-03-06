@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
     Layout, Image as ImageIcon, Plus, Trash2, Save,
     Facebook, Twitter, Instagram, Youtube, Mail, Phone, MapPin, Globe,
-    AlertCircle, Upload, CheckCircle, Loader, ImagePlus
+    AlertCircle, Upload, CheckCircle, Loader, ImagePlus, Newspaper,
+    Eye, EyeOff, MessageSquare, Calendar, ChevronRight, Link2
 } from 'lucide-react';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { HeroSlide } from '../types';
@@ -20,7 +21,7 @@ interface ExtendedHeroSlide extends WebHeroSlide {
 
 
 const WebHomeScreenManager: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'hero' | 'social' | 'navbar'>('hero');
+    const [activeTab, setActiveTab] = useState<'hero' | 'social' | 'navbar' | 'news'>('hero');
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [showToast, setShowToast] = useState(false);
@@ -56,6 +57,12 @@ const WebHomeScreenManager: React.FC = () => {
     const [navbarLogoFile, setNavbarLogoFile] = useState<File | null>(null);
     const [navbarLogoPreview, setNavbarLogoPreview] = useState<string | null>(null);
 
+    // --- NEWS STATE ---
+    const [newsSettings, setNewsSettings] = useState<{ isNewsActive: boolean }>({ isNewsActive: true });
+    const [newsItems, setNewsItems] = useState<any[]>([]);
+    const [showAddNews, setShowAddNews] = useState(false);
+    const [newNews, setNewNews] = useState({ title: '', source: '', link: '', contentSnippet: '' });
+
     // Load Data
     useEffect(() => {
         const loadData = async () => {
@@ -74,9 +81,15 @@ const WebHomeScreenManager: React.FC = () => {
                 if (navbar && Object.keys(navbar).length > 0) {
                     setNavbarInfo(prev => ({ ...prev, ...navbar }));
                 }
+
+                // Load News
+                const nSettings = await webHomeService.getNewsSettings();
+                setNewsSettings(nSettings || { isNewsActive: true });
+                const nItems = await webHomeService.getAllNewsItems();
+                setNewsItems(Array.isArray(nItems) ? nItems : []);
             } catch (error) {
                 console.error("Failed to load data", error);
-                alert("Veriler yüklenirken bir hata oluştu.");
+                // alert("Veriler yüklenirken bir hata oluştu."); // Removed alert to prevent interruption if some parts load fine
             } finally {
                 setLoading(false);
             }
@@ -247,6 +260,65 @@ const WebHomeScreenManager: React.FC = () => {
         }
     };
 
+    // --- NEWS HANDLERS ---
+    const handleToggleNewsGlobal = async (isActive: boolean) => {
+        setSaving(true);
+        try {
+            await webHomeService.updateNewsSettings(isActive);
+            setNewsSettings({ isNewsActive: isActive });
+            setToastMessage(`Haber bandı ${isActive ? 'aktif' : 'pasif'} yapıldı.`);
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 3000);
+        } catch (error) {
+            console.error(error);
+            setToastMessage('İşlem başarısız.');
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 3000);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleToggleNewsItem = async (id: number, isActive: boolean) => {
+        try {
+            await webHomeService.toggleNewsItem(id, isActive);
+            setNewsItems(prev => prev.map(item => item.id === id ? { ...item, isActive } : item));
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    const handleDeleteNewsItem = async (id: number) => {
+        if (!window.confirm('Bu haberi silmek istediğinizden emin misiniz?')) return;
+        try {
+            await webHomeService.deleteNewsItem(id);
+            setNewsItems(prev => prev.filter(item => item.id !== id));
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    const handleCreateManualNews = async () => {
+        if (!newNews.title || !newNews.link) return alert('Başlık ve Link zorunludur.');
+        setSaving(true);
+        try {
+            const created = await webHomeService.createManualNews(newNews);
+            setNewsItems([created, ...newsItems]);
+            setShowAddNews(false);
+            setNewNews({ title: '', source: '', link: '', contentSnippet: '' });
+            setToastMessage('Haber başarıyla eklendi.');
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 3000);
+        } catch (error) {
+            console.error(error);
+            setToastMessage('Haber eklenemedi.');
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 3000);
+        } finally {
+            setSaving(false);
+        }
+    };
+
 
 
     if (loading && heroSlides.length === 0) {
@@ -295,6 +367,16 @@ const WebHomeScreenManager: React.FC = () => {
                     >
                         <Layout size={16} />
                         Navbar Ayarları
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('news')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium rounded-lg transition-all ${activeTab === 'news'
+                            ? 'bg-white text-primary shadow-sm'
+                            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+                            }`}
+                    >
+                        <Newspaper size={16} />
+                        Haberler
                     </button>
                 </div>
 
@@ -742,6 +824,186 @@ const WebHomeScreenManager: React.FC = () => {
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* === NEWS TAB === */}
+                {activeTab === 'news' && (
+                    <div className="space-y-6 max-w-5xl">
+                        {/* Settings Panel */}
+                        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center">
+                            <div>
+                                <h3 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                                    <Newspaper className="text-primary" /> Haber Bandı Yönetimi
+                                </h3>
+                                <p className="text-gray-500 text-sm mt-1">Ana sayfadaki kayan haber bandını buradan açıp kapatabilir veya haberleri yönetebilirsiniz.</p>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${newsSettings?.isNewsActive ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                                    {newsSettings?.isNewsActive ? 'AKTİF' : 'PASİF'}
+                                </span>
+                                <button
+                                    onClick={() => handleToggleNewsGlobal(!newsSettings?.isNewsActive)}
+                                    className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors focus:outline-none ${newsSettings?.isNewsActive ? 'bg-primary' : 'bg-gray-300'}`}
+                                >
+                                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${newsSettings?.isNewsActive ? 'translate-x-6' : 'translate-x-1'}`} />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* News List */}
+                        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                            <div className="p-6 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
+                                <h3 className="font-bold text-gray-700 flex items-center gap-2">
+                                    <AlertCircle size={18} className="text-primary" /> Son Haberler (Google & Manuel)
+                                </h3>
+                                <button
+                                    onClick={async () => {
+                                        setLoading(true);
+                                        const nItems = await webHomeService.getAllNewsItems();
+                                        setNewsItems(Array.isArray(nItems) ? nItems : []);
+                                        setLoading(false);
+                                    }}
+                                    className="text-xs bg-gray-100 text-gray-600 px-3 py-1.5 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2"
+                                >
+                                    {loading ? <Loader size={12} className="animate-spin" /> : <Plus size={12} className="rotate-45" />} Listeyi Yenile
+                                </button>
+                                <button
+                                    onClick={() => setShowAddNews(true)}
+                                    className="text-sm bg-primary text-white font-bold px-4 py-2 rounded-xl hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/20 flex items-center gap-2"
+                                >
+                                    <Plus size={18} /> Manuel Haber Ekle
+                                </button>
+                            </div>
+
+                            <div className="divide-y divide-gray-50">
+                                {(!newsItems || newsItems.length === 0) ? (
+                                    <div className="p-10 text-center text-gray-400 italic">Henüz haber bulunmuyor.</div>
+                                ) : (
+                                    newsItems.map((item) => (
+                                        <div key={item?.id} className={`p-5 flex items-center gap-4 hover:bg-gray-50/80 transition-colors ${!item?.isActive ? 'opacity-60 grayscale' : ''}`}>
+                                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${item?.isManual ? 'bg-blue-50 text-blue-500' : 'bg-orange-50 text-orange-500'}`}>
+                                                {item?.isManual ? <MessageSquare size={20} /> : <Globe size={20} />}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{item?.source || 'Bilinmiyor'}</span>
+                                                    <span className="text-[10px] text-gray-300">•</span>
+                                                    <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                                                        <Calendar size={10} />
+                                                        {item?.pubDate ? new Date(item.pubDate).toLocaleDateString('tr-TR') : '-'}
+                                                    </span>
+                                                    {item?.isManual && <span className="text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded font-bold">MANUEL</span>}
+                                                </div>
+                                                <h4 className="font-bold text-gray-800 text-sm truncate">{item?.title}</h4>
+                                                <p className="text-gray-500 text-xs truncate max-w-xl">{item?.contentSnippet?.replace(/<[^>]*>?/gm, '')}</p>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => handleToggleNewsItem(item.id, !item.isActive)}
+                                                    className={`p-2 rounded-lg transition-colors ${item?.isActive ? 'text-green-600 bg-green-50 hover:bg-green-100' : 'text-gray-400 bg-gray-100 hover:bg-gray-200'}`}
+                                                    title={item?.isActive ? 'Pasif Yap' : 'Aktif Yap'}
+                                                >
+                                                    {item?.isActive ? <Eye size={18} /> : <EyeOff size={18} />}
+                                                </button>
+                                                <a
+                                                    href={item?.link}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="p-2 text-primary bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors"
+                                                    title="Habere Git"
+                                                >
+                                                    <ChevronRight size={18} />
+                                                </a>
+                                                <button
+                                                    onClick={() => handleDeleteNewsItem(item.id)}
+                                                    className="p-2 text-red-500 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+                                                    title="Sil"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* ADD NEWS MODAL */}
+                {showAddNews && (
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowAddNews(false)}></div>
+                        <div className="bg-white rounded-2xl w-full max-w-lg relative z-10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                            <div className="p-6 bg-gray-50 border-b border-gray-100">
+                                <h3 className="font-bold text-gray-800 flex items-center gap-2"><Newspaper className="text-primary" /> Manuel Haber Ekle</h3>
+                                <p className="text-gray-500 text-xs mt-1">Acil durumlar veya özel duyurular için sisteme haber girişi yapın.</p>
+                            </div>
+                            <div className="p-6 space-y-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 mb-1">Haber Başlığı</label>
+                                    <input
+                                        type="text"
+                                        value={newNews.title}
+                                        onChange={(e) => setNewNews({ ...newNews, title: e.target.value })}
+                                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-primary text-sm font-bold"
+                                        placeholder="Örn: Edirne'de Önemli Duyuru!"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 mb-1">Haber Kaynağı</label>
+                                        <input
+                                            type="text"
+                                            value={newNews.source}
+                                            onChange={(e) => setNewNews({ ...newNews, source: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-primary text-sm"
+                                            placeholder="Örn: Belediye Duyurusu"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 mb-1">Yönlendirme Linki</label>
+                                        <div className="relative">
+                                            <Link2 className="absolute left-3 top-2.5 text-gray-400" size={14} />
+                                            <input
+                                                type="text"
+                                                value={newNews.link}
+                                                onChange={(e) => setNewNews({ ...newNews, link: e.target.value })}
+                                                className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl focus:outline-primary text-xs font-mono"
+                                                placeholder="https://..."
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 mb-1">Haber Detayı (HTML destekler)</label>
+                                    <textarea
+                                        rows={4}
+                                        value={newNews.contentSnippet}
+                                        onChange={(e) => setNewNews({ ...newNews, contentSnippet: e.target.value })}
+                                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-primary text-sm resize-none"
+                                        placeholder="Haber tıkladığında açılacak modal içeriği..."
+                                    />
+                                </div>
+                            </div>
+                            <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+                                <button
+                                    onClick={() => setShowAddNews(false)}
+                                    className="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-700"
+                                >
+                                    Vazgeç
+                                </button>
+                                <button
+                                    onClick={handleCreateManualNews}
+                                    disabled={saving}
+                                    className="px-6 py-2 bg-primary text-white font-bold rounded-xl hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/20 flex items-center gap-2 disabled:opacity-50"
+                                >
+                                    {saving ? <Loader size={16} className="animate-spin" /> : <Save size={16} />}
+                                    Haberi Yayınla
+                                </button>
                             </div>
                         </div>
                     </div>
