@@ -12,6 +12,7 @@ import { webHomeService } from '../services/web-home';
 import IconPicker from '../components/IconPicker';
 import FoodPlaceForm from '../components/FoodPlaceForm';
 import SearchableSelect from '../components/SearchableSelect';
+import ImageUploadField from '../components/ImageUploadField';
 import { toast } from 'react-hot-toast';
 
 const initialState: Place = {
@@ -440,15 +441,6 @@ const PageDesign: React.FC = () => {
         }));
     };
 
-    const imageUrlToDisplay = useMemo(() => {
-        if (selectedFile) return URL.createObjectURL(selectedFile);
-        return getImageUrl(placeFormData.pic_url);
-    }, [selectedFile, placeFormData.pic_url]);
-
-    const backImageUrlToDisplay = useMemo(() => {
-        if (selectedBackFile) return URL.createObjectURL(selectedBackFile);
-        return getImageUrl(placeFormData.back_pic_url);
-    }, [selectedBackFile, placeFormData.back_pic_url]);
 
     // --- RENDER HELPERS ---
     const renderCardGroups = () => {
@@ -664,22 +656,22 @@ const PageDesign: React.FC = () => {
 
                                     <div className="col-span-full grid grid-cols-1 md:grid-cols-2 gap-8 py-4 border-y border-gray-50 my-4">
                                         <div className="space-y-3">
-                                            <label className="block text-sm font-bold text-gray-700">Ana Sayfa Görsel</label>
-                                            {imageUrlToDisplay && <img src={imageUrlToDisplay} alt="" className="w-full h-48 object-cover rounded-xl border border-gray-100 shadow-sm" />}
-                                            <label className="flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-primary hover:bg-primary/5 transition-all text-gray-500">
-                                                <Upload size={20} /> <span>{selectedFile ? selectedFile.name : 'Görsel Seç'}</span>
-                                                <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && setSelectedFile(e.target.files[0])} />
-                                            </label>
-                                            <p className="text-[10px] text-gray-400 mt-1">Önerilen: 800x600px</p>
+                                            <ImageUploadField
+                                                label="Ana Sayfa Görsel"
+                                                value={placeFormData.pic_url ? getImageUrl(placeFormData.pic_url) : undefined}
+                                                previewUrl={selectedFile ? URL.createObjectURL(selectedFile) : undefined}
+                                                onFileSelect={setSelectedFile}
+                                                recommendedSize="800x600px"
+                                            />
                                         </div>
                                         <div className="space-y-3">
-                                            <label className="block text-sm font-bold text-gray-700">Arka Sayfa Görsel</label>
-                                            {backImageUrlToDisplay && <img src={backImageUrlToDisplay} alt="" className="w-full h-48 object-cover rounded-xl border border-gray-100 shadow-sm" />}
-                                            <label className="flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-primary hover:bg-primary/5 transition-all text-gray-500">
-                                                <Upload size={20} /> <span>{selectedBackFile ? selectedBackFile.name : 'Görsel Seç'}</span>
-                                                <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && setSelectedBackFile(e.target.files[0])} />
-                                            </label>
-                                            <p className="text-[10px] text-gray-400 mt-1">Önerilen: 800x600px</p>
+                                            <ImageUploadField
+                                                label="Arka Sayfa Görsel"
+                                                value={placeFormData.back_pic_url ? getImageUrl(placeFormData.back_pic_url) : undefined}
+                                                previewUrl={selectedBackFile ? URL.createObjectURL(selectedBackFile) : undefined}
+                                                onFileSelect={setSelectedBackFile}
+                                                recommendedSize="800x600px"
+                                            />
                                         </div>
                                     </div>
 

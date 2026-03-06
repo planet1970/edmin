@@ -3,6 +3,7 @@ import { Save, Image as ImageIcon } from 'lucide-react';
 import { SplashConfig } from '../types';
 import { splashService } from '../services/splash';
 import { API_BASE_URL, getImageUrl } from '../services/api';
+import ImageUploadField from '../components/ImageUploadField';
 
 const SplashManager: React.FC = () => {
   const [config, setConfig] = useState<SplashConfig>({
@@ -12,8 +13,6 @@ const SplashManager: React.FC = () => {
     tagline: 'Edirne Şehir Rehberi',
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadConfig();
@@ -35,13 +34,6 @@ const SplashManager: React.FC = () => {
     setConfig(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setSelectedFile(file);
-      setPreviewUrl(URL.createObjectURL(file));
-    }
-  };
 
   const handleSubmit = async () => {
     try {
@@ -64,7 +56,6 @@ const SplashManager: React.FC = () => {
     }
   };
 
-  const displayImageUrl = previewUrl || getImageUrl(config.logoUrl);
 
   return (
     <div className="p-6">
@@ -127,27 +118,13 @@ const SplashManager: React.FC = () => {
           </div>
 
           <div className="space-y-2 md:col-span-2">
-            <label className="text-sm font-medium text-gray-700">Logo</label>
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              accept="image/*"
-              className="hidden"
+            <ImageUploadField
+              label="Splash Logo"
+              value={config.logoUrl ? getImageUrl(config.logoUrl) : undefined}
+              previewUrl={selectedFile ? URL.createObjectURL(selectedFile) : undefined}
+              onFileSelect={setSelectedFile}
+              recommendedSize="1024x1024px"
             />
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              className="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center hover:border-primary transition-colors h-48"
-            >
-              {displayImageUrl ? (
-                <img src={displayImageUrl} alt="Logo Preview" className="h-full object-contain" />
-              ) : (
-                <div className="text-center text-gray-400">
-                  <ImageIcon size={32} className="mx-auto mb-2" />
-                  <span className="text-sm">Logo yüklemek için tıklayın</span>
-                </div>
-              )}
-            </div>
           </div>
         </div>
       </div>

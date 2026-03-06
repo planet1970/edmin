@@ -4,6 +4,7 @@ import { OnboardingStep } from '../types';
 import { onboardingService } from '../services/onboarding';
 import { API_BASE_URL, getImageUrl } from '../services/api';
 import IconPicker from '../components/IconPicker';
+import ImageUploadField from '../components/ImageUploadField';
 
 const OnboardingManager: React.FC = () => {
   const [steps, setSteps] = useState<OnboardingStep[]>([]);
@@ -13,8 +14,6 @@ const OnboardingManager: React.FC = () => {
   // Local state for the form
   const [formData, setFormData] = useState<Partial<OnboardingStep>>({});
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadSteps();
@@ -39,7 +38,6 @@ const OnboardingManager: React.FC = () => {
     setActiveStepId(step.id);
     setFormData({ ...step });
     setSelectedFile(null);
-    setPreviewUrl(null);
   };
 
   const handleAddStep = () => {
@@ -51,7 +49,6 @@ const OnboardingManager: React.FC = () => {
     setActiveStepId(-1); // -1 indicates creating new
     setFormData(newStep);
     setSelectedFile(null);
-    setPreviewUrl(null);
   };
 
   const handleDeleteStep = async (id: number) => {
@@ -69,13 +66,6 @@ const OnboardingManager: React.FC = () => {
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setSelectedFile(file);
-      setPreviewUrl(URL.createObjectURL(file));
-    }
-  };
 
   const handleSave = async () => {
     try {
@@ -106,7 +96,6 @@ const OnboardingManager: React.FC = () => {
     }
   };
 
-  const displayImageUrl = previewUrl || getImageUrl(formData.imageUrl);
 
   return (
     <div className="p-6">
@@ -217,27 +206,13 @@ const OnboardingManager: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Görsel</label>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  accept="image/*"
-                  className="hidden"
+                <ImageUploadField
+                  label="Onboarding Görseli"
+                  value={formData.imageUrl ? getImageUrl(formData.imageUrl) : undefined}
+                  previewUrl={selectedFile ? URL.createObjectURL(selectedFile) : undefined}
+                  onFileSelect={setSelectedFile}
+                  recommendedSize="800x800px"
                 />
-                <div
-                  onClick={() => fileInputRef.current?.click()}
-                  className="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center hover:border-primary transition-colors h-48"
-                >
-                  {displayImageUrl ? (
-                    <img src={displayImageUrl} alt="Preview" className="h-full object-contain" />
-                  ) : (
-                    <div className="text-center text-gray-400">
-                      <ImageIcon size={32} className="mx-auto mb-2" />
-                      <span className="text-sm">Görsel yüklemek için tıklayın</span>
-                    </div>
-                  )}
-                </div>
               </div>
 
               <div className="pt-4 border-t mt-4">

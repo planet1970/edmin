@@ -5,6 +5,7 @@ import { categoriesService } from '../services/categories';
 import { subcategoriesService, SubCategoryPayload } from '../services/subcategories';
 import { API_BASE_URL, getImageUrl } from '../services/api';
 import { pageLinksService } from '../services/pageLinks';
+import ImageUploadField from '../components/ImageUploadField';
 
 const SubCategoryManager: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -321,35 +322,13 @@ const SubCategoryManager: React.FC = () => {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Görsel</label>
-                  {imageUrlToDisplay && (
-                    <div className="w-32 h-24 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
-                      <img src={imageUrlToDisplay} alt="Subcategory Image" className="w-full h-full object-cover" />
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2">
-                    <label className="flex items-center gap-2 px-3 py-2 border border-dashed border-gray-300 rounded-lg text-sm text-gray-600 cursor-pointer hover:border-primary">
-                      <Upload size={16} />
-                      <span>{selectedFile ? selectedFile.name : 'Dosya Seç'}</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) setSelectedFile(file);
-                        }}
-                      />
-                    </label>
-                    {selectedFile && (
-                      <button
-                        onClick={() => setSelectedFile(null)}
-                        className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded"
-                      >
-                        <XCircle size={16} />
-                      </button>
-                    )}
-                  </div>
+                  <ImageUploadField
+                    label="Kategori Görseli"
+                    value={editingItem.imageUrl ? getImageUrl(editingItem.imageUrl) : undefined}
+                    previewUrl={selectedFile ? URL.createObjectURL(selectedFile) : undefined}
+                    onFileSelect={setSelectedFile}
+                    recommendedSize="800x600px"
+                  />
                 </div>
               </div>
 

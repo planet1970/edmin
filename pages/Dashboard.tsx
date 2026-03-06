@@ -17,7 +17,7 @@ import {
   Database,
   Megaphone
 } from 'lucide-react';
-import { api } from '../services/api';
+import { api, getImageUrl } from '../services/api';
 
 interface Stats {
   totalUsers: number;
@@ -27,6 +27,12 @@ interface Stats {
   totalFoodPlaces: number;
   pendingContactMessages: number;
   totalVisitors: number;
+  topPopupAds: Array<{
+    id: number;
+    title: string;
+    viewCount: number;
+    imageUrl: string;
+  }>;
 }
 
 const Dashboard: React.FC = () => {
@@ -196,6 +202,47 @@ const Dashboard: React.FC = () => {
                 className="w-full py-3 bg-gray-50 text-gray-600 rounded-xl text-sm font-bold hover:bg-primary hover:text-white transition-all"
               >
                 Tüm İçerikleri Yönet
+              </button>
+            </div>
+          </div>
+
+          <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2 mt-8">
+            <Megaphone className="text-primary" size={20} /> Reklam Performansı (Top 5)
+          </h2>
+          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-4">
+            {stats?.topPopupAds && stats.topPopupAds.length > 0 ? (
+              <div className="space-y-4">
+                {stats.topPopupAds.map((ad) => (
+                  <div key={ad.id} className="flex items-center gap-4 group">
+                    <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0 border border-gray-200">
+                      <img src={getImageUrl(ad.imageUrl)} alt="" className="w-full h-full object-cover" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-gray-800 truncate">{ad.title || 'Başlıksız Reklam'}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <div className="h-1.5 flex-1 bg-gray-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-primary rounded-full"
+                            style={{
+                              width: `${Math.min((ad.viewCount / (stats.topPopupAds[0].viewCount || 1)) * 100, 100)}%`
+                            }}
+                          ></div>
+                        </div>
+                        <span className="text-[10px] font-bold text-primary whitespace-nowrap">{ad.viewCount} İzlenme</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400 text-center py-4">Henüz reklam verisi bulunmuyor.</p>
+            )}
+            <div className="pt-4 border-t border-gray-50">
+              <button
+                onClick={() => navigate('/ads')}
+                className="w-full py-3 bg-gray-50 text-gray-600 rounded-xl text-sm font-bold hover:bg-primary hover:text-white transition-all"
+              >
+                Tüm Reklamları Yönet
               </button>
             </div>
           </div>

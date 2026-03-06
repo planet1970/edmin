@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Save, X, Upload, CheckCircle, XCircle, UtensilsCrossed } from 'lucide-react';
 import { FoodPlace } from '../types';
 import { getImageUrl } from '../services/api';
+import ImageUploadField from './ImageUploadField';
 
 interface Props {
     data: Partial<FoodPlace>;
@@ -20,6 +21,26 @@ const FoodPlaceForm: React.FC<Props> = ({
     const [formData, setFormData] = useState<Partial<FoodPlace>>(data);
     const [file, setFile] = useState<File | null>(null);
     const [backFile, setBackFile] = useState<File | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [backPreviewUrl, setBackPreviewUrl] = useState<string | null>(null);
+
+    const handleFileSelect = (f: File | null) => {
+        setFile(f);
+        if (f) {
+            setPreviewUrl(URL.createObjectURL(f));
+        } else {
+            setPreviewUrl(null);
+        }
+    };
+
+    const handleBackFileSelect = (f: File | null) => {
+        setBackFile(f);
+        if (f) {
+            setBackPreviewUrl(URL.createObjectURL(f));
+        } else {
+            setBackPreviewUrl(null);
+        }
+    };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         if (isReadOnly) return;
@@ -51,38 +72,22 @@ const FoodPlaceForm: React.FC<Props> = ({
 
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                    <div className="space-y-3">
-                        <label className="block text-sm font-bold text-gray-700">Ana Sayfa Görsel</label>
-                        {(file || formData.imageUrl) && (
-                            <img
-                                src={file ? URL.createObjectURL(file) : getImageUrl(formData.imageUrl)}
-                                className="w-full h-48 object-cover rounded-xl border shadow-sm"
-                                alt="Main"
-                            />
-                        )}
-                        {!isReadOnly && (
-                            <label className="flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-primary hover:bg-primary/5 transition-all text-gray-500">
-                                <Upload size={20} /> <span>{file ? file.name : 'Görsel Seç'}</span>
-                                <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && setFile(e.target.files[0])} />
-                            </label>
-                        )}
-                    </div>
-                    <div className="space-y-3">
-                        <label className="block text-sm font-bold text-gray-700">Arka Sayfa Görsel</label>
-                        {(backFile || formData.backImageUrl) && (
-                            <img
-                                src={backFile ? URL.createObjectURL(backFile) : getImageUrl(formData.backImageUrl)}
-                                className="w-full h-48 object-cover rounded-xl border shadow-sm"
-                                alt="Back"
-                            />
-                        )}
-                        {!isReadOnly && (
-                            <label className="flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-primary hover:bg-primary/5 transition-all text-gray-500">
-                                <Upload size={20} /> <span>{backFile ? backFile.name : 'Görsel Seç'}</span>
-                                <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && setBackFile(e.target.files[0])} />
-                            </label>
-                        )}
-                    </div>
+                    <ImageUploadField
+                        label="Ana Sayfa Görsel"
+                        value={formData.imageUrl ? getImageUrl(formData.imageUrl) : undefined}
+                        previewUrl={previewUrl || undefined}
+                        onFileSelect={handleFileSelect}
+                        disabled={isReadOnly}
+                        recommendedSize="800x600px"
+                    />
+                    <ImageUploadField
+                        label="Arka Sayfa Görsel"
+                        value={formData.backImageUrl ? getImageUrl(formData.backImageUrl) : undefined}
+                        previewUrl={backPreviewUrl || undefined}
+                        onFileSelect={handleBackFileSelect}
+                        disabled={isReadOnly}
+                        recommendedSize="1200x800px"
+                    />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

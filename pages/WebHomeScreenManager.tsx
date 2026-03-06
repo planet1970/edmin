@@ -9,6 +9,8 @@ import { HeroSlide } from '../types';
 import { webHomeService, WebHeroSlide, WebSocialInfo, WebNavbar } from '../services/web-home';
 import { API_BASE_URL, getImageUrl as getServiceImageUrl } from '../services/api';
 
+import ImageUploadField from '../components/ImageUploadField';
+
 // Extended HeroSlide with optional file for upload
 interface ExtendedHeroSlide extends WebHeroSlide {
     file?: File;
@@ -27,7 +29,6 @@ const WebHomeScreenManager: React.FC = () => {
 
     // --- HERO SLIDER STATE ---
     const [heroSlides, setHeroSlides] = useState<ExtendedHeroSlide[]>([]);
-    const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
     // --- SOCIAL BAR STATE ---
     const [socialInfo, setSocialInfo] = useState<WebSocialInfo>({
@@ -54,7 +55,6 @@ const WebHomeScreenManager: React.FC = () => {
     });
     const [navbarLogoFile, setNavbarLogoFile] = useState<File | null>(null);
     const [navbarLogoPreview, setNavbarLogoPreview] = useState<string | null>(null);
-    const logoInputRef = useRef<HTMLInputElement>(null);
 
     // Load Data
     useEffect(() => {
@@ -104,9 +104,13 @@ const WebHomeScreenManager: React.FC = () => {
         setHeroSlides(prev => prev.map(item => item.id === id ? { ...item, [field]: value } : item));
     };
 
-    const handleFileChange = (id: string, file: File) => {
-        const url = URL.createObjectURL(file);
-        setHeroSlides(prev => prev.map(item => item.id === id ? { ...item, file, previewUrl: url } : item));
+    const handleFileChange = (id: string, file: File | null) => {
+        if (file) {
+            const url = URL.createObjectURL(file);
+            setHeroSlides(prev => prev.map(item => item.id === id ? { ...item, file, previewUrl: url } : item));
+        } else {
+            setHeroSlides(prev => prev.map(item => item.id === id ? { ...item, file: undefined, previewUrl: undefined } : item));
+        }
     };
 
     const handleDeleteHero = (id: string) => {
@@ -311,30 +315,13 @@ const WebHomeScreenManager: React.FC = () => {
 
                         {heroSlides.map((slide) => (
                             <div key={slide.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex gap-4 items-start">
-                                <div
-                                    className="w-48 h-28 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden relative group border border-gray-200 cursor-pointer"
-                                    onClick={() => fileInputRefs.current[slide.id]?.click()}
-                                >
-                                    {(slide.previewUrl || getServiceImageUrl(slide.imageUrl)) ? (
-                                        <img src={slide.previewUrl || getServiceImageUrl(slide.imageUrl)!} alt="" className="w-full h-full object-cover" />
-                                    ) : (
-                                        <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 gap-2">
-                                            <ImageIcon size={32} />
-                                            <span className="text-[10px]">Görsel Seç</span>
-                                        </div>
-                                    )}
-                                    <div className="absolute inset-0 bg-black/40 hidden group-hover:flex items-center justify-center text-white font-medium text-xs">
-                                        <Upload size={16} className="mr-1" /> Değiştir
-                                    </div>
-                                    <div className="absolute bottom-1 right-1 bg-black/50 text-[8px] text-white px-1 rounded">1920x600px</div>
-                                    <input
-                                        type="file"
-                                        ref={el => fileInputRefs.current[slide.id] = el}
-                                        className="hidden"
-                                        accept="image/*"
-                                        onChange={(e) => {
-                                            if (e.target.files?.[0]) handleFileChange(slide.id, e.target.files[0]);
-                                        }}
+                                <div className="w-56 flex-shrink-0">
+                                    <ImageUploadField
+                                        label="Slayt Görseli"
+                                        value={slide.imageUrl ? getServiceImageUrl(slide.imageUrl) : undefined}
+                                        previewUrl={slide.previewUrl}
+                                        onFileSelect={(file) => handleFileChange(slide.id, file)}
+                                        recommendedSize="1920x600px"
                                     />
                                 </div>
                                 <div className="flex-1 space-y-3">
@@ -375,25 +362,17 @@ const WebHomeScreenManager: React.FC = () => {
                                     <div className="grid grid-cols-3 gap-3">
                                         <div className="col-span-2">
                                             <label className="block text-xs font-medium text-gray-400 mb-1 flex justify-between items-center">
-                                                <span>Görsel Yolu (Manuel veya Yükle)</span>
-                                                {slide.file && <span className="text-[10px] text-green-600 font-bold bg-green-50 px-1 rounded">Yeni dosya seçildi</span>}
+                                                <span>Görsel Yolu (Farklı Kaynak ise)</span>
+                                                {slide.file && <span className="text-[10px] text-green-600 font-bold bg-green-50 px-1 rounded">Yeni dosya yüklenecek</span>}
                                             </label>
-                                            <div className="flex gap-2">
-                                                <input
-                                                    type="text"
-                                                    value={slide.imageUrl || ''}
-                                                    onChange={(e) => updateHero(slide.id, 'imageUrl', e.target.value)}
-                                                    className="flex-1 px-3 py-1.5 border border-gray-200 rounded text-xs text-gray-500 font-mono placeholder-gray-400 focus:outline-primary bg-gray-50/30"
-                                                    placeholder="/uploads/hero/..."
-                                                    disabled={!!slide.file}
-                                                />
-                                                <button
-                                                    onClick={() => fileInputRefs.current[slide.id]?.click()}
-                                                    className="px-3 py-1.5 bg-gray-800 text-white rounded text-xs font-bold hover:bg-gray-900 transition-colors flex items-center gap-1 shrink-0"
-                                                >
-                                                    <ImagePlus size={14} /> Görsel Seç
-                                                </button>
-                                            </div>
+                                            <input
+                                                type="text"
+                                                value={slide.imageUrl || ''}
+                                                onChange={(e) => updateHero(slide.id, 'imageUrl', e.target.value)}
+                                                className="w-full px-3 py-1.5 border border-gray-200 rounded text-xs text-gray-500 font-mono placeholder-gray-400 focus:outline-primary bg-gray-50/30"
+                                                placeholder="/uploads/hero/..."
+                                                disabled={!!slide.file}
+                                            />
                                         </div>
                                         <div>
                                             <label className="block text-xs font-medium text-gray-400 mb-1 text-center">Sıra</label>
@@ -594,39 +573,16 @@ const WebHomeScreenManager: React.FC = () => {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                             {/* Logo Upload Section */}
                             <div className="space-y-4">
-                                <label className="block text-sm font-bold text-gray-700 mb-2">Site Logosu</label>
-                                <div
-                                    className="aspect-square bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center relative group cursor-pointer overflow-hidden transition-all hover:border-primary/50 hover:bg-primary/5"
-                                    onClick={() => logoInputRef.current?.click()}
-                                >
-                                    {(navbarLogoPreview || navbarInfo.logoUrl) ? (
-                                        <img
-                                            src={navbarLogoPreview || getServiceImageUrl(navbarInfo.logoUrl)}
-                                            className="max-w-[80%] max-h-[80%] object-contain"
-                                            alt="Logo Preview"
-                                        />
-                                    ) : (
-                                        <div className="flex flex-col items-center gap-2 text-gray-400">
-                                            <ImageIcon size={48} strokeWidth={1.5} />
-                                            <span className="text-xs font-medium">Logo Yükle</span>
-                                        </div>
-                                    )}
-
-                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                        <div className="bg-white p-2 rounded-full text-gray-800 shadow-lg">
-                                            <Upload size={20} />
-                                        </div>
-                                    </div>
-
-                                    <input
-                                        type="file"
-                                        ref={logoInputRef}
-                                        className="hidden"
-                                        accept="image/*"
-                                        onChange={(e) => e.target.files?.[0] && handleLogoChange(e.target.files[0])}
-                                    />
-                                </div>
-                                <p className="text-[10px] text-gray-400 text-center italic">Önerilen: 300x100px (Şeffaf PNG veya SVG).</p>
+                                <ImageUploadField
+                                    label="Site Logosu"
+                                    value={navbarInfo.logoUrl ? getServiceImageUrl(navbarInfo.logoUrl) : undefined}
+                                    previewUrl={navbarLogoPreview || undefined}
+                                    onFileSelect={(file) => {
+                                        setNavbarLogoFile(file);
+                                        setNavbarLogoPreview(file ? URL.createObjectURL(file) : null);
+                                    }}
+                                    recommendedSize="300x100px"
+                                />
                             </div>
 
                             {/* Title & Style Section */}

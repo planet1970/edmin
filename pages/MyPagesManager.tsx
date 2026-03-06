@@ -17,6 +17,7 @@ import FoodPlaceForm from '../components/FoodPlaceForm';
 import { tempPagesService } from '../services/tempPages';
 import { toast } from 'react-hot-toast';
 import ConfirmDialog from '../components/ConfirmDialog';
+import ImageUploadField from '../components/ImageUploadField';
 
 // Storage Keys matching other files
 const STORAGE_KEY_CATS = 'ems_categories';
@@ -333,34 +334,24 @@ const MyPagesManager: React.FC = () => {
                                 <form onSubmit={handleSavePlaceDraftSummary} className="space-y-6">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6 bg-gray-50 p-6 rounded-xl border border-gray-100">
                                         <div className="space-y-3">
-                                            <label className="block text-sm font-bold text-gray-700">Ana Sayfa Görsel</label>
-                                            {(placeFile || editingData.pic_url) && (
-                                                <img
-                                                    src={placeFile ? URL.createObjectURL(placeFile) : getImageUrl(editingData.pic_url)}
-                                                    className="w-full h-48 object-cover rounded-xl border shadow-sm"
-                                                />
-                                            )}
-                                            {!viewOnly && (
-                                                <label className="flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed border-gray-200 bg-white rounded-xl cursor-pointer hover:border-primary hover:text-primary transition-all text-gray-500">
-                                                    <Upload size={20} /> <span>{placeFile ? placeFile.name : 'Görsel Seç'}</span>
-                                                    <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && setPlaceFile(e.target.files[0])} />
-                                                </label>
-                                            )}
+                                            <ImageUploadField
+                                                label="Ana Sayfa Görsel"
+                                                value={editingData.pic_url ? getImageUrl(editingData.pic_url) : undefined}
+                                                previewUrl={placeFile ? URL.createObjectURL(placeFile) : undefined}
+                                                onFileSelect={setPlaceFile}
+                                                recommendedSize="800x600px"
+                                                isReadOnly={viewOnly}
+                                            />
                                         </div>
                                         <div className="space-y-3">
-                                            <label className="block text-sm font-bold text-gray-700">Arka Sayfa Görsel</label>
-                                            {(placeBackFile || editingData.back_pic_url) && (
-                                                <img
-                                                    src={placeBackFile ? URL.createObjectURL(placeBackFile) : getImageUrl(editingData.back_pic_url)}
-                                                    className="w-full h-48 object-cover rounded-xl border shadow-sm"
-                                                />
-                                            )}
-                                            {!viewOnly && (
-                                                <label className="flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed border-gray-200 bg-white rounded-xl cursor-pointer hover:border-primary hover:text-primary transition-all text-gray-500">
-                                                    <Upload size={20} /> <span>{placeBackFile ? placeBackFile.name : 'Görsel Seç'}</span>
-                                                    <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && setPlaceBackFile(e.target.files[0])} />
-                                                </label>
-                                            )}
+                                            <ImageUploadField
+                                                label="Arka Sayfa Görsel"
+                                                value={editingData.back_pic_url ? getImageUrl(editingData.back_pic_url) : undefined}
+                                                previewUrl={placeBackFile ? URL.createObjectURL(placeBackFile) : undefined}
+                                                onFileSelect={setPlaceBackFile}
+                                                recommendedSize="800x600px"
+                                                isReadOnly={viewOnly}
+                                            />
                                         </div>
                                     </div>
 
