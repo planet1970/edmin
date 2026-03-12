@@ -7,7 +7,12 @@ type Props = {
 };
 
 const ProtectedRoute: React.FC<Props> = ({ children }) => {
-  const { token } = useAuth();
+  const { token, loading } = useAuth();
+
+  if (loading) {
+    return null; // Or a loading spinner
+  }
+
   if (!token) {
     return <Navigate to="/login" replace />;
   }
