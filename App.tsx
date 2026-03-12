@@ -28,6 +28,7 @@ import { Toaster } from 'react-hot-toast';
 import VisitorsManager from './pages/VisitorsManager';
 import ContactMessagesManager from './pages/ContactMessagesManager';
 import DraftsManagement from './pages/DraftsManagement';
+import MediaManager from './pages/MediaManager';
 
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     <div className="flex min-h-screen bg-secondary font-sans text-gray-900">
@@ -71,6 +72,7 @@ const App: React.FC = () => {
                                         <Route path="/onboarding" element={<OnboardingManager />} />
                                         <Route path="/contact" element={<ContactMessagesManager />} />
                                         <Route path="/drafts" element={<DraftsManagement />} />
+                                        <Route path="/media" element={<MediaManager />} />
                                         <Route path="/users" element={<UserManager />} />
                                         <Route path="/visitors" element={<VisitorsManager />} />
                                         <Route path="/user-types" element={<UserTypeManager />} />
