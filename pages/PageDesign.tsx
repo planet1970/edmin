@@ -11,6 +11,7 @@ import { pageAuthoritiesService, PageAuthority } from '../services/pageAuthoriti
 import { webHomeService } from '../services/web-home';
 import IconPicker from '../components/IconPicker';
 import FoodPlaceForm from '../components/FoodPlaceForm';
+import HistoricalPlaceForm from '../components/HistoricalPlaceForm';
 import SearchableSelect from '../components/SearchableSelect';
 import ImageUploadField from '../components/ImageUploadField';
 import { toast } from 'react-hot-toast';
@@ -207,28 +208,30 @@ const PageDesign: React.FC = () => {
         setIsFormVisible(true);
     };
 
-    const handleSavePlace = async () => {
+    const handleSavePlace = async (data?: Place, file?: File, backFile?: File) => {
         if (!selectedSubCategoryId) return;
         setLoading(true);
         setError(null);
         try {
+            const currentData = data || placeFormData;
+            const currentFile = file || selectedFile;
+            const currentBackFile = backFile || selectedBackFile;
+
             const payload: any = {
-                ...placeFormData,
+                ...currentData,
                 categoryId: parseInt(selectedCategoryId, 10),
                 subCategoryId: parseInt(selectedSubCategoryId, 10)
             };
-            delete payload.id;
-            delete payload.createdAt;
-            delete payload.updatedAt;
-            delete payload.createdBy;
-            delete payload.updatedBy;
-            delete payload.createdById;
-            delete payload.updatedById;
+            
+            // Clean up read-only fields
+            const { id, createdAt, updatedAt, createdBy, updatedBy, createdById, updatedById, ...finalPayload } = payload;
 
-            if (placeFormData.id) {
-                await placesService.update(String(placeFormData.id), payload, selectedFile || undefined, selectedBackFile || undefined);
+            if (currentData.id) {
+                await placesService.update(String(currentData.id), finalPayload, currentFile || undefined, currentBackFile || undefined);
+                toast.success('Mekan başarıyla güncellendi');
             } else {
-                await placesService.create(payload, selectedFile || undefined, selectedBackFile || undefined);
+                await placesService.create(finalPayload, currentFile || undefined, currentBackFile || undefined);
+                toast.success('Yeni mekan başarıyla eklendi');
             }
 
             setPlaceFormData(initialState);
@@ -240,6 +243,7 @@ const PageDesign: React.FC = () => {
             console.error(err);
             const errorMessage = err?.response?.data?.message;
             setError(Array.isArray(errorMessage) ? errorMessage : errorMessage || err?.message || 'Kaydedilemedi');
+            toast.error('Kayıt sırasında hata oluştu');
         } finally {
             setLoading(false);
         }
@@ -621,77 +625,15 @@ const PageDesign: React.FC = () => {
                                 </div>
                             </div>
                         ) : (
-                            /* DEFAULT FORM VIEW (Place) */
-                            <div className="bg-white p-8 rounded-xl shadow-lg border border-primary/10">
-                                <div className="flex justify-between items-center mb-8 border-b pb-4">
-                                    <h2 className="text-xl font-bold text-gray-800">
-                                        {placeFormData.id ? 'İçeriği Düzenle' : 'Yeni İçerik Ekle'}
-                                    </h2>
-                                    <button onClick={() => setIsFormVisible(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
-                                        <XCircle size={28} />
-                                    </button>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    <div className="col-span-full grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Başlık</label>
-                                            <input type="text" name="title" value={placeFormData.title} onChange={handlePlaceChange} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-primary" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Slug (Sayfa Bağlantısı)</label>
-                                            <input readOnly type="text" value={placeFormData.slug} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-gray-50 text-gray-500" />
-                                        </div>
-                                    </div>
-
-                                    <div className="col-span-full">
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Ön Sayfa Başlık</label>
-                                        <input type="text" name="source" value={placeFormData.source || ''} onChange={handlePlaceChange} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-primary" />
-                                    </div>
-
-                                    <div className="col-span-full">
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Açıklama</label>
-                                        <textarea name="description" value={placeFormData.description} onChange={handlePlaceChange} rows={3} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-primary" />
-                                    </div>
-
-                                    <div className="col-span-full grid grid-cols-1 md:grid-cols-2 gap-8 py-4 border-y border-gray-50 my-4">
-                                        <div className="space-y-3">
-                                            <ImageUploadField
-                                                label="Ana Sayfa Görsel"
-                                                value={placeFormData.pic_url ? getImageUrl(placeFormData.pic_url) : undefined}
-                                                previewUrl={selectedFile ? URL.createObjectURL(selectedFile) : undefined}
-                                                onFileSelect={setSelectedFile}
-                                                recommendedSize="800x600px"
-                                            />
-                                        </div>
-                                        <div className="space-y-3">
-                                            <ImageUploadField
-                                                label="Arka Sayfa Görsel"
-                                                value={placeFormData.back_pic_url ? getImageUrl(placeFormData.back_pic_url) : undefined}
-                                                previewUrl={selectedBackFile ? URL.createObjectURL(selectedBackFile) : undefined}
-                                                onFileSelect={setSelectedBackFile}
-                                                recommendedSize="800x600px"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {renderCardGroups()}
-                                    <div className="col-span-full h-px bg-gray-100 my-4"></div>
-                                    {renderPanelGroups()}
-
-                                    <div className="col-span-full flex items-center gap-3 pt-6 border-t border-gray-100">
-                                        <label className="flex items-center gap-2 cursor-pointer group">
-                                            <input type="checkbox" name="isActive" checked={placeFormData.isActive} onChange={handlePlaceChange} className="w-5 h-5 text-primary rounded border-gray-300 focus:ring-primary" />
-                                            <span className="text-sm font-medium text-gray-700 group-hover:text-primary transition-colors">Aktif Yayın</span>
-                                        </label>
-                                        <div className="flex-1"></div>
-                                        <button onClick={() => setIsFormVisible(false)} className="px-6 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">İptal</button>
-                                        <button onClick={handleSavePlace} disabled={loading} className="flex items-center gap-2 bg-primary hover:bg-orange-600 text-white px-10 py-2.5 rounded-lg transition-all font-bold shadow-lg shadow-orange-900/20 disabled:opacity-50">
-                                            <Save size={20} /> {loading ? 'Kaydediliyor...' : 'Kaydet'}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
+                            /* HISTORICAL PLACE FORM VIEW */
+                            <HistoricalPlaceForm
+                                data={placeFormData}
+                                onSave={async (data, file, backFile) => {
+                                    handleSavePlace(data, file, backFile);
+                                }}
+                                onCancel={() => setIsFormVisible(false)}
+                                loading={loading}
+                            />
                         )
                     ) : (
                         /* LIST VIEW */

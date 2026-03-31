@@ -199,8 +199,8 @@ export interface Place {
   area10?: string;
   source?: string;
   isActive: boolean;
-  createdById?: string;
-  updatedById?: string;
+  categoryId?: number;
+  subCategoryId?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -217,6 +217,7 @@ export interface FoodPlace {
   rating?: number;
   storyTitle?: string;
   description?: string;
+  frontContent?: string;
   backContent?: string;
   phone?: string;
   hoursMon?: string;
@@ -269,6 +270,7 @@ export interface FoodPlace {
   hoursEveryday?: string;
   createdAt?: string;
   updatedAt?: string;
+  slug?: string;
 }
 
 export interface PageLink {

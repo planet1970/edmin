@@ -121,16 +121,20 @@ const FoodPlaceForm: React.FC<Props> = ({
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Konu Başlığı</label>
-                    <input type="text" disabled={isReadOnly} name="storyTitle" value={formData.storyTitle || ''} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-primary disabled:bg-gray-50" />
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Mekan Hikayesi Başlığı</label>
+                    <input type="text" disabled={isReadOnly} name="storyTitle" value={formData.storyTitle || ''} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-primary disabled:bg-gray-50" placeholder="Örn: Tarihçemiz veya Hakkımızda" />
                 </div>
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Açıklama</label>
-                    <textarea name="description" disabled={isReadOnly} rows={3} value={formData.description || ''} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-primary disabled:bg-gray-50" />
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Kısa Tanıtım (Liste Sayfası İçin)</label>
+                    <textarea name="description" disabled={isReadOnly} rows={2} value={formData.description || ''} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-primary disabled:bg-gray-50" placeholder="Mekan kartında görünecek kısa yazı..." />
                 </div>
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Arka Sayfa İçerik (Modal)</label>
-                    <textarea name="backContent" disabled={isReadOnly} rows={6} value={formData.backContent || ''} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-primary disabled:bg-gray-50" />
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Ana Hikaye / İçerik (Giriş Bölümü)</label>
+                    <textarea name="frontContent" disabled={isReadOnly} rows={5} value={formData.frontContent || ''} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-primary disabled:bg-gray-50" placeholder="Sayfada ilk görünecek ana metin..." />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Arka Sayfa / Detay İçerik (Opsiyonel)</label>
+                    <textarea name="backContent" disabled={isReadOnly} rows={5} value={formData.backContent || ''} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-primary disabled:bg-gray-50" placeholder="Ekstra detaylar veya modal içeriği..." />
                 </div>
 
                 <div className="p-6 bg-gray-50 rounded-xl border border-gray-200">

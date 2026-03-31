@@ -41,8 +41,24 @@ async function request<T>(path: string, options: CustomRequestOptions = {}): Pro
   });
 
   if (!res.ok) {
-    const message = await res.text();
-    throw new Error(message || 'İstek başarısız oldu');
+    const text = await res.text();
+    let errorMessage = text || 'İstek başarısız oldu';
+
+    try {
+      const errorObj = JSON.parse(text);
+      errorMessage = errorObj.message || errorMessage;
+    } catch (e) {
+      // Not JSON, keep raw text or default
+    }
+
+    if (res.status === 401 && !path.includes('/auth/login')) {
+      localStorage.removeItem('edmin_token');
+      localStorage.removeItem('edmin_user');
+      window.location.hash = '#/login';
+      errorMessage = 'Oturum süreniz doldu, lütfen tekrar giriş yapın.';
+    }
+
+    throw new Error(errorMessage);
   }
 
   return res.json() as Promise<T>;
