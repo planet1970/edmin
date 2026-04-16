@@ -251,19 +251,26 @@ const PageDesign: React.FC = () => {
 
     const handleSaveFood = async (payload: any, file?: File, backFile?: File) => {
         setLoading(true);
+        setError(null);
         try {
-            // Prisma'ya gönderilmemesi gereken alanları temizle
-            const { id, createdAt, updatedAt, subCategory, ...cleanPayload } = payload;
+            // Prisma'ya gönderilmemesi gereken ve FoodPlace'de olmayan alanları temizle
+            const { 
+                id, createdAt, updatedAt, subCategory, 
+                createdBy, updatedBy, createdById, updatedById,
+                ...cleanPayload 
+            } = payload;
 
             const finalPayload = {
                 ...cleanPayload,
                 subCategoryId: parseInt(selectedSubCategoryId, 10)
             };
 
-            if (id) {
-                await foodPlacesService.update(id, finalPayload, file, backFile);
+            if (id && id !== '') {
+                await foodPlacesService.update(Number(id), finalPayload, file, backFile);
+                toast.success('Mekan başarıyla güncellendi');
             } else {
                 await foodPlacesService.create(finalPayload, file, backFile);
+                toast.success('Yeni mekan başarıyla eklendi');
             }
             setIsFormVisible(false);
             setFoodFormData(null);
@@ -271,7 +278,10 @@ const PageDesign: React.FC = () => {
             setSelectedFoodBackFile(null);
             loadContent();
         } catch (err: any) {
-            setError(err?.message || 'Yeme içme mekanı kaydedilemedi');
+            console.error(err);
+            const errorMessage = err?.response?.data?.message || err?.message || 'Yeme içme mekanı kaydedilemedi';
+            setError(errorMessage);
+            toast.error(errorMessage);
         } finally {
             setLoading(false);
         }
