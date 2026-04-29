@@ -174,7 +174,7 @@ const Sidebar: React.FC = () => {
             </div>
 
             <div className="p-6 border-t border-gray-800/50 text-xs text-center text-gray-500 font-medium">
-                &copy; 2024 Edmin Panel v1.0
+                &copy; 2026 Edmin Panel v1.1.0
             </div>
         </aside>
     );
