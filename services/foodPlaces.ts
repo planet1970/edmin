@@ -42,4 +42,7 @@ export const foodPlacesService = {
     remove: async (id: number): Promise<void> => {
         return api.delete<void>(`${basePath}/${id}`);
     },
+    reorder: async (ids: number[]): Promise<void> => {
+        return api.patch<void>(`${basePath}/reorder`, { ids });
+    },
 };

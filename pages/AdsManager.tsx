@@ -66,7 +66,7 @@ const AdsManager: React.FC = () => {
 
     // --- MODAL STATE ---
     const [editingAd, setEditingAd] = useState<any>(null);
-    const [campaignText, setCampaignText] = useState('');
+    const [sloganText, setSloganText] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     // --- FETCH DATA ---
@@ -366,7 +366,7 @@ const AdsManager: React.FC = () => {
 
     const handleOpenEditModal = (ad: any) => {
         setEditingAd(ad);
-        setCampaignText(ad.discount || '');
+        setSloganText(ad.slogan || '');
         setIsModalOpen(true);
     };
 
@@ -374,8 +374,11 @@ const AdsManager: React.FC = () => {
         if (!editingAd) return;
         setSaving(true);
         try {
-            await api.patch(`/web-home/ads/featured/${editingAd.id}`, { discount: campaignText });
-            toast.success('Kampanya bilgisi güncellendi.');
+            const endpoint = activeTab === 'featured' ? 'featured' : 'popular';
+            const data: any = { slogan: sloganText };
+
+            await api.patch(`/web-home/ads/${endpoint}/${editingAd.id}`, data);
+            toast.success('Slogan güncellendi.');
             setIsModalOpen(false);
             fetchData();
         } catch (error) {
@@ -528,7 +531,7 @@ const AdsManager: React.FC = () => {
                                                     <div className="p-4 bg-white border-t border-gray-100">
                                                         <div className="text-xs text-gray-400 font-medium mb-3 flex items-center justify-between">
                                                             <div className="flex items-center gap-1">
-                                                                <Clock size={12} /> {new Date(ad.createdAt).toLocaleDateString("tr-TR")}
+                                                                <Clock size={12} /> {new Date(ad.createdAt).toLocaleDateString("tr-TR", { timeZone: 'Europe/Istanbul' })}
                                                             </div>
                                                             <div className="flex items-center gap-1 text-primary font-bold">
                                                                 <Star size={12} fill="currentColor" /> {ad.viewCount || 0} Gösterim
@@ -540,13 +543,13 @@ const AdsManager: React.FC = () => {
                                                                 {ad.startDate && (
                                                                     <div className="flex items-center gap-2 text-[11px] font-bold text-gray-600">
                                                                         <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
-                                                                        BAŞLANGIÇ: <span className="text-blue-600 ml-auto">{new Date(ad.startDate).toLocaleString("tr-TR", { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+                                                                        BAŞLANGIÇ: <span className="text-blue-600 ml-auto">{new Date(ad.startDate).toLocaleString("tr-TR", { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' })}</span>
                                                                     </div>
                                                                 )}
                                                                 {ad.endDate && (
                                                                     <div className="flex items-center gap-2 text-[11px] font-bold text-gray-600">
                                                                         <div className="w-1.5 h-1.5 rounded-full bg-orange-400"></div>
-                                                                        BİTİŞ: <span className="text-orange-600 ml-auto">{new Date(ad.endDate).toLocaleString("tr-TR", { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+                                                                        BİTİŞ: <span className="text-orange-600 ml-auto">{new Date(ad.endDate).toLocaleString("tr-TR", { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' })}</span>
                                                                     </div>
                                                                 )}
                                                             </div>
@@ -872,7 +875,7 @@ const AdsManager: React.FC = () => {
                                                     <button
                                                         onClick={() => handleOpenEditModal(ad)}
                                                         className="text-gray-300 hover:text-blue-500 transition-colors p-2 hover:bg-blue-50 rounded-xl"
-                                                        title="Kampanya Düzenle"
+                                                        title="Düzenle"
                                                     >
                                                         <Edit3 size={20} />
                                                     </button>
@@ -1077,6 +1080,13 @@ const AdsManager: React.FC = () => {
 
                                                 <div className="flex items-center justify-between pt-4 border-t border-gray-50">
                                                     <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => handleOpenEditModal(ad)}
+                                                            className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all"
+                                                            title="Düzenle"
+                                                        >
+                                                            <Edit3 size={18} />
+                                                        </button>
                                                         <button onClick={() => handleToggleActive(ad.id, ad.isActive, 'popular')} className={`p-2 rounded-lg transition-all ${ad.isActive ? 'text-green-500 hover:bg-green-50' : 'text-gray-400 hover:bg-gray-100'}`}>
                                                             <CheckCircle size={18} />
                                                         </button>
@@ -1116,18 +1126,20 @@ const AdsManager: React.FC = () => {
                                 </button>
                             </div>
 
-                            <div className="p-8">
-                                <label className="block text-sm font-bold text-gray-700 mb-2">Kampanya Metni</label>
-                                <textarea
-                                    value={campaignText}
-                                    onChange={(e) => setCampaignText(e.target.value)}
-                                    placeholder="Örn: %20 İndirim Fırsatı!"
-                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-primary/10 transition-all font-medium text-gray-700 resize-none"
-                                    rows={4}
-                                />
-                                <p className="mt-3 text-[11px] text-gray-400 font-medium leading-relaxed">
-                                    Buraya yazılacak metin, web sitesindeki mekan kartında yeşil bir kutu içinde kampanya olarak görünecektir.
-                                </p>
+                            <div className="p-8 space-y-5">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">Slogan / Yeşil Etiket Bilgisi</label>
+                                    <input
+                                        type="text"
+                                        value={sloganText}
+                                        onChange={(e) => setSloganText(e.target.value)}
+                                        placeholder="Örn: Hafta Sonu Özel"
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-primary/10 transition-all font-medium text-gray-700"
+                                    />
+                                    <p className="mt-1.5 text-[10px] text-gray-400 font-medium">
+                                        Bu metin turuncu etiketin hemen altında <span className="text-green-500 font-bold">Yeşil</span> bir kutu içinde görünür.
+                                    </p>
+                                </div>
 
                                 <div className="mt-8 flex gap-3">
                                     <button

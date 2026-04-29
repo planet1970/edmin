@@ -108,6 +108,9 @@ const PageDesign: React.FC = () => {
     const [error, setError] = useState<string | string[] | null>(null);
     const [isFormVisible, setIsFormVisible] = useState(false);
     const [isSlugModalVisible, setIsSlugModalVisible] = useState(false);
+    const [isSubcategoryOrderModalVisible, setIsSubcategoryOrderModalVisible] = useState(false);
+    const [reorderType, setReorderType] = useState<'CATEGORY' | 'SUBCATEGORY'>('SUBCATEGORY');
+    const [tempReorderList, setTempReorderList] = useState<any[]>([]);
     const [orderDirty, setOrderDirty] = useState(false);
 
     // --- INITIAL LOAD ---
@@ -179,6 +182,62 @@ const PageDesign: React.FC = () => {
         }
     }, [selectedSubCategoryId]);
 
+    // --- REORDERING LOGIC ---
+    const [reorderingPlaces, setReorderingPlaces] = useState(false);
+    const [reorderingFood, setReorderingFood] = useState(false);
+
+    const handleDragStart = (e: React.DragEvent, index: number, type: 'place' | 'food') => {
+        e.dataTransfer.setData('index', index.toString());
+        e.dataTransfer.setData('type', type);
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+    };
+
+    const handleDrop = (e: React.DragEvent, dropIndex: number, type: 'place' | 'food') => {
+        const dragType = e.dataTransfer.getData('type');
+        if (dragType !== type) return;
+
+        const dragIndex = parseInt(e.dataTransfer.getData('index'));
+        if (dragIndex === dropIndex) return;
+
+        if (type === 'place') {
+            const newPlaces = [...places];
+            const [draggedItem] = newPlaces.splice(dragIndex, 1);
+            newPlaces.splice(dropIndex, 0, draggedItem);
+            setPlaces(newPlaces);
+            setReorderingPlaces(true);
+        } else {
+            const newFood = [...foodPlaces];
+            const [draggedItem] = newFood.splice(dragIndex, 1);
+            newFood.splice(dropIndex, 0, draggedItem);
+            setFoodPlaces(newFood);
+            setReorderingFood(true);
+        }
+    };
+
+    const saveOrder = async (type: 'place' | 'food') => {
+        setLoading(true);
+        try {
+            if (type === 'place') {
+                const ids = places.map(p => Number(p.id));
+                await placesService.reorder(ids);
+                toast.success('Mekan sıralaması kaydedildi');
+                setReorderingPlaces(false);
+            } else {
+                const ids = foodPlaces.map(f => Number(f.id));
+                await foodPlacesService.reorder(ids);
+                toast.success('Yeme-içme sıralaması kaydedildi');
+                setReorderingFood(false);
+            }
+        } catch (err: any) {
+            toast.error('Sıralama kaydedilemedi: ' + err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // --- HANDLERS ---
     const handleAddNew = () => {
         setIsSlugModalVisible(true);
@@ -234,9 +293,6 @@ const PageDesign: React.FC = () => {
                 toast.success('Yeni mekan başarıyla eklendi');
             }
 
-            setPlaceFormData(initialState);
-            setSelectedFile(null);
-            setSelectedBackFile(null);
             setIsFormVisible(false);
             loadContent();
         } catch (err: any) {
@@ -244,6 +300,36 @@ const PageDesign: React.FC = () => {
             const errorMessage = err?.response?.data?.message;
             setError(Array.isArray(errorMessage) ? errorMessage : errorMessage || err?.message || 'Kaydedilemedi');
             toast.error('Kayıt sırasında hata oluştu');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSaveSubcategoryOrder = async (reorderedSubs: SubCategory[]) => {
+        setLoading(true);
+        try {
+            const ids = reorderedSubs.map(s => Number(s.id));
+            await subcategoriesService.reorder(ids);
+            setSubCategories(reorderedSubs);
+            toast.success('Alt kategori sıralaması kaydedildi');
+            setIsSubcategoryOrderModalVisible(false);
+        } catch (err: any) {
+            toast.error('Sıralama kaydedilemedi: ' + err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSaveCategoryOrder = async (reorderedCats: Category[]) => {
+        setLoading(true);
+        try {
+            const ids = reorderedCats.map(c => Number(c.id));
+            await categoriesService.reorder(ids);
+            setCategories(reorderedCats);
+            toast.success('Kategori sıralaması kaydedildi');
+            setIsSubcategoryOrderModalVisible(false);
+        } catch (err: any) {
+            toast.error('Sıralama kaydedilemedi: ' + err.message);
         } finally {
             setLoading(false);
         }
@@ -596,7 +682,19 @@ const PageDesign: React.FC = () => {
             {/* SELECTION BAR */}
             <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wider">1. Kategori Seçin</label>
+                    <div className="flex justify-between items-center mb-2">
+                        <label className="block text-sm font-bold text-gray-700 uppercase tracking-wider">1. Kategori Seçin</label>
+                        <button 
+                            className="text-xs text-primary font-bold hover:underline"
+                            onClick={() => {
+                                setReorderType('CATEGORY');
+                                setTempReorderList([...categories]);
+                                setIsSubcategoryOrderModalVisible(true);
+                            }}
+                        >
+                            Sıralamayı Düzenle
+                        </button>
+                    </div>
                     <select
                         value={selectedCategoryId}
                         onChange={(e) => setSelectedCategoryId(e.target.value)}
@@ -607,7 +705,21 @@ const PageDesign: React.FC = () => {
                     </select>
                 </div>
                 <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wider">2. Alt Kategori Seçin</label>
+                    <div className="flex justify-between items-center mb-2">
+                        <label className="block text-sm font-bold text-gray-700 uppercase tracking-wider">2. Alt Kategori Seçin</label>
+                        {selectedCategoryId && (
+                            <button 
+                                className="text-xs text-primary font-bold hover:underline"
+                                onClick={() => {
+                                    setReorderType('SUBCATEGORY');
+                                    setTempReorderList([...subCategories]);
+                                    setIsSubcategoryOrderModalVisible(true);
+                                }}
+                            >
+                                Sıralamayı Düzenle
+                            </button>
+                        )}
+                    </div>
                     <select
                         value={selectedSubCategoryId}
                         onChange={(e) => setSelectedSubCategoryId(e.target.value)}
@@ -655,6 +767,17 @@ const PageDesign: React.FC = () => {
                                     <span className="ml-2 px-2 py-0.5 bg-gray-100 text-gray-500 rounded-md text-xs font-mono">{places.length + foodPlaces.length}</span>
                                 </h3>
                                 <div className="flex items-center gap-2">
+                                    {(reorderingPlaces || reorderingFood) && (
+                                        <button 
+                                            onClick={() => {
+                                                if (reorderingPlaces) saveOrder('place');
+                                                if (reorderingFood) saveOrder('food');
+                                            }} 
+                                            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-all font-medium shadow-md animate-pulse"
+                                        >
+                                            <Save size={18} /> Sıralamayı Kaydet
+                                        </button>
+                                    )}
                                     <button onClick={handleAddNew} className="flex items-center gap-2 bg-primary hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition-all font-medium shadow-md">
                                         <Plus size={18} /> Yeni Ekle
                                     </button>
@@ -680,8 +803,15 @@ const PageDesign: React.FC = () => {
                                         ) : (
                                             <>
                                                 {/* STANDART PLACES */}
-                                                {places.map((place) => (
-                                                    <tr key={`p-${place.id}`} className="hover:bg-gray-50/80 transition-colors group">
+                                                {places.map((place, index) => (
+                                                    <tr 
+                                                        key={`p-${place.id}`} 
+                                                        draggable
+                                                        onDragStart={(e) => handleDragStart(e, index, 'place')}
+                                                        onDragOver={handleDragOver}
+                                                        onDrop={(e) => handleDrop(e, index, 'place')}
+                                                        className="hover:bg-gray-50/80 transition-colors group cursor-move"
+                                                    >
                                                         <td className="px-6 py-4 text-gray-300"><GripVertical size={18} /></td>
                                                         <td className="px-6 py-4">
                                                             <div className="flex items-center gap-3">
@@ -710,8 +840,15 @@ const PageDesign: React.FC = () => {
                                                     </tr>
                                                 ))}
                                                 {/* FOOD PLACES */}
-                                                {foodPlaces.map((food) => (
-                                                    <tr key={`f-${food.id}`} className="hover:bg-gray-50/80 transition-colors group">
+                                                {foodPlaces.map((food, index) => (
+                                                    <tr 
+                                                        key={`f-${food.id}`} 
+                                                        draggable
+                                                        onDragStart={(e) => handleDragStart(e, index, 'food')}
+                                                        onDragOver={handleDragOver}
+                                                        onDrop={(e) => handleDrop(e, index, 'food')}
+                                                        className="hover:bg-gray-50/80 transition-colors group cursor-move"
+                                                    >
                                                         <td className="px-6 py-4 text-gray-300"><GripVertical size={18} /></td>
                                                         <td className="px-6 py-4">
                                                             <div className="flex items-center gap-3">
@@ -859,6 +996,54 @@ const PageDesign: React.FC = () => {
                     </div>
                     <h3 className="text-lg font-bold text-gray-600 mb-2">İçerik Yönetimi İçin Seçim Yapın</h3>
                     <p className="text-gray-400 max-w-sm mx-auto">Lütfen yukarıdaki menüden yönetmek istediğiniz kategori ve alt kategoriyi seçin.</p>
+                </div>
+            )}
+            {/* SUBCATEGORY / CATEGORY REORDER MODAL */}
+            {isSubcategoryOrderModalVisible && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-6">
+                        <div className="flex justify-between items-center mb-6 border-b pb-4">
+                            <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                <GripVertical className="text-primary" /> 
+                                {reorderType === 'CATEGORY' ? 'Kategori Sıralaması' : 'Alt Kategori Sıralaması'}
+                            </h3>
+                            <button onClick={() => setIsSubcategoryOrderModalVisible(false)}><XCircle size={24} className="text-gray-400 hover:text-gray-600" /></button>
+                        </div>
+
+                        <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2 mb-6">
+                            {tempReorderList.map((item, index) => (
+                                <div 
+                                    key={item.id} 
+                                    draggable
+                                    onDragStart={(e) => {
+                                        e.dataTransfer.setData('index', index.toString());
+                                    }}
+                                    onDragOver={(e) => e.preventDefault()}
+                                    onDrop={(e) => {
+                                        const dragIndex = parseInt(e.dataTransfer.getData('index'));
+                                        const newList = [...tempReorderList];
+                                        const [draggedItem] = newList.splice(dragIndex, 1);
+                                        newList.splice(index, 0, draggedItem);
+                                        setTempReorderList(newList);
+                                    }}
+                                    className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg border border-gray-200 cursor-move hover:bg-gray-100 transition-colors"
+                                >
+                                    <GripVertical size={16} className="text-gray-400" />
+                                    <span className="font-medium text-gray-700">{item.title}</span>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="flex justify-end gap-3 pt-4 border-t">
+                            <button onClick={() => setIsSubcategoryOrderModalVisible(false)} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">İptal</button>
+                            <button 
+                                onClick={() => reorderType === 'CATEGORY' ? handleSaveCategoryOrder(tempReorderList) : handleSaveSubcategoryOrder(tempReorderList)} 
+                                className="px-6 py-2 text-sm bg-primary text-white hover:bg-orange-600 rounded-lg font-bold shadow-md"
+                            >
+                                Sıralamayı Kaydet
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

@@ -1,10 +1,17 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
-const API_BASE_URL = import.meta.env.VITE_API_URL?.replace('/api/v1', '') || 'http://localhost:3000';
+const API_BASE_URL = (import.meta.env.VITE_API_URL?.replace('/api/v1', '') || 'http://localhost:3000').replace(/\/$/, '');
+
+// Yerel geliştirmede prod resimlerini görmek isterseniz true yapabilirsiniz
+const USE_PROD_IMAGES_LOCALLY = true;
 
 export const getImageUrl = (url?: string) => {
   if (!url) return '';
   if (url.startsWith('http')) return url;
-  return `${API_BASE_URL}${url}`;
+  
+  const cleanUrl = url.startsWith('/') ? url : `/${url}`;
+  
+  // Admin panelinde her zaman bağlı olduğumuz sunucudaki (yerel veya prod) dosyaları görmek isteriz
+  return `${API_URL}${cleanUrl}`;
 };
 
 interface CustomRequestOptions extends Omit<RequestInit, 'body'> {

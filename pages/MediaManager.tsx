@@ -3,6 +3,7 @@ import { Image, Trash2, HardDrive, FileImage, BarChart3, Loader2, Search, Extern
 import { mediaService, CloudinaryResource, CloudinaryUsageResponse } from '../services/media';
 import { toast } from 'react-hot-toast';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { getImageUrl } from '../services/api';
 
 const MediaManager: React.FC = () => {
     const [resources, setResources] = useState<CloudinaryResource[]>([]);
@@ -102,7 +103,7 @@ const MediaManager: React.FC = () => {
         <div className="p-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div>
-                    <h1 className="text-2xl font-bold mb-2">Medya Yönetimi (Cloudinary)</h1>
+                    <h1 className="text-2xl font-bold mb-2">Medya Yönetimi (Sunucu)</h1>
                     <p className="text-gray-400">Yüklenen tüm görselleri yönetin</p>
                 </div>
                 <div className="flex items-center gap-4">
@@ -186,13 +187,13 @@ const MediaManager: React.FC = () => {
 
                         <div className="aspect-video relative overflow-hidden bg-black/20 cursor-pointer" onClick={() => toggleSelect(res.public_id)}>
                             <img
-                                src={res.secure_url}
+                                src={getImageUrl(res.secure_url)}
                                 alt={res.public_id}
                                 className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500"
                             />
                             <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
                                 <a
-                                    href={res.secure_url}
+                                    href={getImageUrl(res.secure_url)}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="w-10 h-10 bg-white/20 hover:bg-white/40 rounded-full flex items-center justify-center backdrop-blur-sm transition-all"

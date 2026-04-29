@@ -163,7 +163,7 @@ const ContactMessagesManager: React.FC = () => {
                                                 <div className="font-medium text-gray-800">{msg.name}</div>
                                                 <div className="text-xs text-gray-500">{msg.email}</div>
                                                 <div className="text-[10px] text-gray-400 flex items-center gap-1 mt-1">
-                                                    <Clock size={10} /> {new Date(msg.createdAt).toLocaleString('tr-TR')}
+                                                    <Clock size={10} /> {new Date(msg.createdAt).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' })}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">

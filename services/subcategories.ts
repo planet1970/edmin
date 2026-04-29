@@ -76,4 +76,7 @@ export const subcategoriesService = {
   remove: async (id: string): Promise<void> => {
     return api.delete<void>(`${basePath}/${id}`);
   },
+  reorder: async (ids: number[]): Promise<void> => {
+    return api.patch<void>(`${basePath}/reorder`, { ids });
+  },
 };

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
     Layout, Plus, Trash2, Save, Edit3, Trash, Star, List,
-    CheckCircle, Info, Loader, X, AlertCircle, GripVertical
+    CheckCircle, Info, Loader, X, AlertCircle, GripVertical, HelpCircle
 } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 import { webHomeService, WebAboutSection, WebAboutCard } from '../services/web-home';
 import IconPicker from '../components/IconPicker';
 import { toast } from 'react-hot-toast';
@@ -93,6 +94,19 @@ const WebAboutManager: React.FC = () => {
         } catch (error) {
             toast.error("Silinirken bir hata oluştu.");
         }
+    };
+
+    const renderIcon = (iconName: string, size = 20) => {
+        if (!iconName) return <HelpCircle size={size} />;
+        
+        // Handle FontAwesome classes if any (legacy support or manual entry)
+        if (iconName.startsWith('fa')) {
+            return <i className={iconName}></i>;
+        }
+
+        // @ts-ignore
+        const IconComp = LucideIcons[iconName];
+        return IconComp ? <IconComp size={size} /> : <HelpCircle size={size} />;
     };
 
     if (loading) {
@@ -190,11 +204,26 @@ const WebAboutManager: React.FC = () => {
                             <div key={card.id} className="group p-6 bg-gray-50/50 border border-gray-100 rounded-3xl hover:bg-white hover:shadow-2xl hover:shadow-gray-200/50 transition-all duration-300 relative">
                                 <div className="flex items-start justify-between mb-4">
                                     <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-primary shadow-sm border border-gray-100 group-hover:scale-110 transition-transform">
-                                        <i className={card.icon}></i>
+                                        {renderIcon(card.icon || '', 24)}
                                     </div>
-                                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onClick={() => handleEditCard(card)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"><Edit3 size={18} /></button>
-                                        <button onClick={() => handleDeleteCard(card.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={18} /></button>
+                                    <div className="flex gap-2">
+                                        <button 
+                                            onClick={async () => {
+                                                try {
+                                                    await webHomeService.updateAboutCard(card.id, { isActive: !card.isActive });
+                                                    fetchData();
+                                                    toast.success(card.isActive ? "Kart gizlendi." : "Kart görünür yapıldı.");
+                                                } catch (e) {
+                                                    toast.error("Güncelleme hatası.");
+                                                }
+                                            }}
+                                            className={`p-2 rounded-lg transition-colors ${card.isActive ? 'text-green-500 hover:bg-green-50' : 'text-gray-400 hover:bg-gray-100'}`}
+                                            title={card.isActive ? "Pasif Yap" : "Aktif Yap"}
+                                        >
+                                            <CheckCircle size={18} />
+                                        </button>
+                                        <button onClick={() => handleEditCard(card)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors" title="Düzenle"><Edit3 size={18} /></button>
+                                        <button onClick={() => handleDeleteCard(card.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Sil"><Trash2 size={18} /></button>
                                     </div>
                                 </div>
                                 <h3 className="font-bold text-gray-800 mb-2">{card.title}</h3>
