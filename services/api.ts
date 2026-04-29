@@ -3,8 +3,6 @@ import { toast } from 'react-hot-toast';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
 const API_BASE_URL = (import.meta.env.VITE_API_URL?.replace('/api/v1', '') || 'http://localhost:3000').replace(/\/$/, '');
 
-// Yerel geliştirmede prod resimlerini görmek isterseniz true yapabilirsiniz
-const USE_PROD_IMAGES_LOCALLY = true;
 
 export const getImageUrl = (url?: string) => {
   if (!url) return '';
