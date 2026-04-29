@@ -1,3 +1,5 @@
+import { toast } from 'react-hot-toast';
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
 const API_BASE_URL = (import.meta.env.VITE_API_URL?.replace('/api/v1', '') || 'http://localhost:3000').replace(/\/$/, '');
 
@@ -11,11 +13,12 @@ export const getImageUrl = (url?: string) => {
   const cleanUrl = url.startsWith('/') ? url : `/${url}`;
   
   // Admin panelinde her zaman bağlı olduğumuz sunucudaki (yerel veya prod) dosyaları görmek isteriz
-  return `${API_URL}${cleanUrl}`;
+  return `${API_BASE_URL}${cleanUrl}`;
 };
 
 interface CustomRequestOptions extends Omit<RequestInit, 'body'> {
   body?: FormData | object;
+  params?: Record<string, string | number | boolean | undefined>;
 }
 
 async function request<T>(path: string, options: CustomRequestOptions = {}): Promise<T> {
@@ -38,63 +41,87 @@ async function request<T>(path: string, options: CustomRequestOptions = {}): Pro
     requestBody = JSON.stringify(options.body);
   }
 
-  const res = await fetch(`${API_URL}${path}`, {
-    method: options.method || 'GET',
-    headers: headers,
-    body: requestBody,
-    cache: 'no-store',
-    credentials: 'omit',
-    mode: 'cors',
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    let errorMessage = text || 'İstek başarısız oldu';
-
-    try {
-      const errorObj = JSON.parse(text);
-      errorMessage = errorObj.message || errorMessage;
-    } catch (e) {
-      // Not JSON, keep raw text or default
-    }
-
-    if (res.status === 401 && !path.includes('/auth/login')) {
-      localStorage.removeItem('edmin_token');
-      localStorage.removeItem('edmin_user');
-      window.location.hash = '#/login';
-      errorMessage = 'Oturum süreniz doldu, lütfen tekrar giriş yapın.';
-    }
-
-    throw new Error(errorMessage);
+  // Handle Query Params
+  let fullPath = `${API_URL}${path}`;
+  if (options.params) {
+    const searchParams = new URLSearchParams();
+    Object.entries(options.params).forEach(([key, value]) => {
+      if (value !== undefined) searchParams.append(key, String(value));
+    });
+    const queryString = searchParams.toString();
+    if (queryString) fullPath += `?${queryString}`;
   }
 
-  return res.json() as Promise<T>;
+  try {
+    const res = await fetch(fullPath, {
+      method: options.method || 'GET',
+      headers: headers,
+      body: requestBody,
+      cache: 'no-store',
+      credentials: 'omit',
+      mode: 'cors',
+    });
+
+    const text = await res.text();
+    let data: any;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch (e) {
+      data = text;
+    }
+
+    if (!res.ok) {
+      let errorMessage = data?.message || 'İstek başarısız oldu';
+
+      if (res.status === 401 && !path.includes('/auth/login')) {
+        localStorage.removeItem('edmin_token');
+        localStorage.removeItem('edmin_user');
+        window.location.hash = '#/login';
+        errorMessage = 'Oturum süreniz doldu, lütfen tekrar giriş yapın.';
+      } else if (res.status === 403) {
+        errorMessage = 'Bu işlem için yetkiniz bulunmuyor.';
+      } else if (res.status === 500) {
+        errorMessage = 'Sunucu hatası oluştu. Lütfen daha sonra tekrar deneyin.';
+      }
+
+      toast.error(errorMessage);
+      throw new Error(errorMessage);
+    }
+
+    return data as T;
+  } catch (error: any) {
+    if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+      toast.error('Sunucuya bağlanılamadı. Lütfen internet bağlantınızı kontrol edin.');
+    }
+    throw error;
+  }
 }
 
 export const api = {
-  get: <T>(path: string) => request<T>(path),
-  post: <T>(path: string, body: FormData | object, headers?: Record<string, string>) =>
+  get: <T>(path: string, options?: Pick<CustomRequestOptions, 'params' | 'headers'>) => 
+    request<T>(path, { ...options, method: 'GET' }),
+  post: <T>(path: string, body: FormData | object, options?: Pick<CustomRequestOptions, 'headers'>) =>
     request<T>(path, {
       method: 'POST',
       body: body,
-      headers,
+      ...options,
     }),
-  put: <T>(path: string, body: FormData | object, headers?: Record<string, string>) =>
+  put: <T>(path: string, body: FormData | object, options?: Pick<CustomRequestOptions, 'headers'>) =>
     request<T>(path, {
       method: 'PUT',
       body: body,
-      headers,
+      ...options,
     }),
-  patch: <T>(path: string, body: FormData | object, headers?: Record<string, string>) =>
+  patch: <T>(path: string, body: FormData | object, options?: Pick<CustomRequestOptions, 'headers'>) =>
     request<T>(path, {
       method: 'PATCH',
       body: body,
-      headers,
+      ...options,
     }),
-  delete: <T>(path: string, headers?: Record<string, string>) =>
+  delete: <T>(path: string, options?: Pick<CustomRequestOptions, 'headers'>) =>
     request<T>(path, {
       method: 'DELETE',
-      headers,
+      ...options,
     }),
 };
 

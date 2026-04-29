@@ -42,11 +42,14 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     </div>
 );
 
+import { ErrorBoundary } from './components/common/ErrorBoundary';
+
 const App: React.FC = () => {
     return (
-        <AuthProvider>
-            <Toaster position="top-right" />
-            <HashRouter>
+        <ErrorBoundary>
+            <AuthProvider>
+                <Toaster position="top-right" />
+                <HashRouter>
                 <Routes>
                     <Route path="/login" element={<Login />} />
                     <Route
@@ -86,6 +89,7 @@ const App: React.FC = () => {
                 </Routes>
             </HashRouter>
         </AuthProvider>
+      </ErrorBoundary>
     );
 };
 
