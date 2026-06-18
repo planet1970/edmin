@@ -29,6 +29,9 @@ import VisitorsManager from './pages/VisitorsManager';
 import ContactMessagesManager from './pages/ContactMessagesManager';
 import DraftsManagement from './pages/DraftsManagement';
 import MediaManager from './pages/MediaManager';
+import SocialMediaGenerator from './pages/SocialMediaGenerator';
+import SocialMediaAccounts from './pages/SocialMediaAccounts';
+import SocialMediaHistory from './pages/SocialMediaHistory';
 
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     <div className="flex min-h-screen bg-secondary font-sans text-gray-900">
@@ -80,6 +83,9 @@ const App: React.FC = () => {
                                         <Route path="/visitors" element={<VisitorsManager />} />
                                         <Route path="/user-types" element={<UserTypeManager />} />
                                         <Route path="/my-pages" element={<MyPagesManager />} />
+                                        <Route path="/social-media/generator" element={<SocialMediaGenerator />} />
+                                        <Route path="/social-media/accounts" element={<SocialMediaAccounts />} />
+                                        <Route path="/social-media/posts" element={<SocialMediaHistory />} />
                                         <Route path="*" element={<Navigate to="/" replace />} />
                                     </Routes>
                                 </AppLayout>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Smartphone, Layers, Home, ListTree, FilePlus, Database, FileCode, Server, FileText, Users, UserCog, UserCheck, ChevronDown, Grid, Globe, Megaphone, Mail } from 'lucide-react';
+import { LayoutDashboard, Smartphone, Layers, Home, ListTree, FilePlus, Database, FileCode, Server, FileText, Users, UserCog, UserCheck, ChevronDown, Grid, Globe, Megaphone, Mail, Cpu, Share2, History } from 'lucide-react';
 import { NavItem } from '../types';
 import { api } from '../services/api';
 
@@ -32,6 +32,14 @@ const initialMenuItems: { category: string; items: NavItem[] }[] = [
         category: 'MÜŞTERİ',
         items: [
             { title: 'Sayfalarım', icon: UserCheck, path: '/my-pages' },
+        ],
+    },
+    {
+        category: 'SOSYAL MEDYA',
+        items: [
+            { title: 'AI Post Oluşturucu', icon: Cpu, path: '/social-media/generator' },
+            { title: 'Hesap Tanımları', icon: Share2, path: '/social-media/accounts' },
+            { title: 'Gönderi Geçmişi', icon: History, path: '/social-media/posts' },
         ],
     },
     {
