@@ -263,6 +263,11 @@ const SocialMediaHistory: React.FC = () => {
                             {post.errorMessage}
                           </span>
                         )}
+                        {post.status === 'PUBLISHING' && post.errorMessage && (
+                          <span className="text-[10px] text-amber-600 font-semibold max-w-[160px] truncate" title={post.errorMessage}>
+                            {post.errorMessage}
+                          </span>
+                        )}
                       </div>
                     </td>
 
