@@ -16,6 +16,7 @@ interface Post {
   publishedAt: string | null;
   errorMessage: string | null;
   createdAt: string;
+  updatedAt: string;
 }
 
 const SocialMediaHistory: React.FC = () => {
@@ -283,21 +284,29 @@ const SocialMediaHistory: React.FC = () => {
                     {/* Actions */}
                     <td className="py-4 px-6 text-center">
                       <div className="flex justify-center items-center gap-3">
-                        {post.status !== 'PUBLISHED' && post.status !== 'PUBLISHING' && (
-                          <button
-                            onClick={() => handlePublishNow(post.id)}
-                            disabled={publishingId === post.id}
-                            className="flex items-center gap-1 text-xs bg-orange-50 hover:bg-primary hover:text-white border border-orange-100 hover:border-transparent text-primary px-3 py-1.5 rounded-lg transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                            title="Şimdi Paylaş"
-                          >
-                            {publishingId === post.id ? (
-                              <RefreshCw size={12} className="animate-spin" />
-                            ) : (
-                              <Send size={12} />
-                            )}
-                            <span className="font-semibold">Şimdi Paylaş</span>
-                          </button>
-                        )}
+                        {(() => {
+                          const isStuckPublishing = post.status === 'PUBLISHING' && 
+                            (new Date().getTime() - new Date(post.updatedAt || post.createdAt).getTime() > 6 * 60 * 1000);
+                          const canPublish = post.status !== 'PUBLISHED' && (post.status !== 'PUBLISHING' || isStuckPublishing);
+                          
+                          return canPublish && (
+                            <button
+                              onClick={() => handlePublishNow(post.id)}
+                              disabled={publishingId === post.id}
+                              className="flex items-center gap-1 text-xs bg-orange-50 hover:bg-primary hover:text-white border border-orange-100 hover:border-transparent text-primary px-3 py-1.5 rounded-lg transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                              title={isStuckPublishing ? "Yeniden Dene (Takılı Kaldı)" : "Şimdi Paylaş"}
+                            >
+                              {publishingId === post.id ? (
+                                <RefreshCw size={12} className="animate-spin" />
+                              ) : (
+                                <Send size={12} />
+                              )}
+                              <span className="font-semibold">
+                                {isStuckPublishing ? "Yeniden Dene" : "Şimdi Paylaş"}
+                              </span>
+                            </button>
+                          );
+                        })()}
 
                         <button
                           onClick={() => handleDeletePost(post.id)}
