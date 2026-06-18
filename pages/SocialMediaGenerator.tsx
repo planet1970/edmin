@@ -167,6 +167,8 @@ const SocialMediaGenerator: React.FC = () => {
         
         if (publishResult.status === 'PUBLISHED') {
           toast.success('Gönderi başarıyla paylaşıldı (yayınlandı)!');
+        } else if (publishResult.status === 'PUBLISHING') {
+          toast.success('Gönderi paylaşım sırasına alındı! Durumunu Geçmiş sekmesinden takip edebilirsiniz.', { duration: 5000 });
         } else {
           toast.error(`Gönderi paylaşılamadı: ${publishResult.errorMessage || 'Bilinmeyen hata'}`);
         }

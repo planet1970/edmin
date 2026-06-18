@@ -23,21 +23,33 @@ const SocialMediaHistory: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [publishingId, setPublishingId] = useState<number | null>(null);
 
-  const fetchPosts = async () => {
-    setLoading(true);
+  const fetchPosts = async (showLoadingSpinner = true) => {
+    if (showLoadingSpinner) setLoading(true);
     try {
       const data = await api.get<Post[]>('/social-media/posts');
       setPosts(data);
     } catch (error) {
       console.error('Gönderi geçmişi yüklenirken hata:', error);
     } finally {
-      setLoading(false);
+      if (showLoadingSpinner) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchPosts();
   }, []);
+
+  // Poll posts status every 5 seconds if there are any posts currently publishing
+  useEffect(() => {
+    const hasPublishingPosts = posts.some(p => p.status === 'PUBLISHING');
+    if (!hasPublishingPosts) return;
+
+    const interval = setInterval(() => {
+      fetchPosts(false);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [posts]);
 
   const handleCopyCaption = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -65,10 +77,12 @@ const SocialMediaHistory: React.FC = () => {
       
       if (result.status === 'PUBLISHED') {
         toast.success('Gönderi başarıyla yayınlandı!');
+      } else if (result.status === 'PUBLISHING') {
+        toast.success('Gönderi paylaşım sırasına alındı! Arka planda paylaşılıyor...');
       } else {
         toast.error(`Paylaşım başarısız oldu: ${result.errorMessage || 'Hata oluştu'}`);
       }
-      fetchPosts();
+      fetchPosts(false);
     } catch (error) {
       toast.dismiss('manual-publish');
       console.error('Yayınlama hatası:', error);
@@ -84,6 +98,13 @@ const SocialMediaHistory: React.FC = () => {
           <span className="inline-flex items-center gap-1.5 bg-green-50 text-green-700 border border-green-200 px-2.5 py-1 rounded-full text-xs font-semibold">
             <CheckCircle2 size={13} />
             Yayınlandı
+          </span>
+        );
+      case 'PUBLISHING':
+        return (
+          <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-1 rounded-full text-xs font-semibold">
+            <RefreshCw className="animate-spin text-amber-500" size={13} />
+            Paylaşılıyor...
           </span>
         );
       case 'SCHEDULED':
@@ -262,7 +283,7 @@ const SocialMediaHistory: React.FC = () => {
                     {/* Actions */}
                     <td className="py-4 px-6 text-center">
                       <div className="flex justify-center items-center gap-3">
-                        {post.status !== 'PUBLISHED' && (
+                        {post.status !== 'PUBLISHED' && post.status !== 'PUBLISHING' && (
                           <button
                             onClick={() => handlePublishNow(post.id)}
                             disabled={publishingId === post.id}
