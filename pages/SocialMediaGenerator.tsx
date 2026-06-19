@@ -36,6 +36,8 @@ const SocialMediaGenerator: React.FC = () => {
   const [videoUrl, setVideoUrl] = useState<string>('');
   const [aiLogs, setAiLogs] = useState<string[]>([]);
   const [isSimulatedResponse, setIsSimulatedResponse] = useState<boolean>(false);
+  const [imageFeedback, setImageFeedback] = useState<string>('');
+  const [regeneratingImage, setRegeneratingImage] = useState<boolean>(false);
 
   // Scheduling states
   const [isScheduleMode, setIsScheduleMode] = useState<boolean>(false);
@@ -119,6 +121,43 @@ const SocialMediaGenerator: React.FC = () => {
       toast.error('İçerik üretilirken hata oluştu.');
     } finally {
       setGenerating(false);
+    }
+  };
+
+  // Handle Image Regeneration
+  const handleRegenerateImage = async () => {
+    if (!generatedImagePrompt) {
+      toast.error('Görsel üretmek için önce bir post oluşturmalısınız.');
+      return;
+    }
+
+    setRegeneratingImage(true);
+    try {
+      toast.loading('Görsel yeniden üretiliyor...', { id: 'imageGen' });
+      const result = await api.post<{
+        imageUrl: string;
+        imagePrompt: string;
+        imageProviderUsed: string;
+        logs?: string[];
+      }>('/social-media/regenerate-image', {
+        imagePrompt: generatedImagePrompt,
+        feedback: imageFeedback,
+        imageProvider: imageProvider,
+      });
+
+      setImageUrl(result.imageUrl);
+      setGeneratedImagePrompt(result.imagePrompt);
+      if (result.logs) {
+        setAiLogs(prev => [...prev, ...result.logs!]);
+      }
+      setImageFeedback(''); // Clear feedback after successful regeneration
+      toast.success('Yeni görsel başarıyla üretildi!', { id: 'imageGen' });
+    } catch (error) {
+      console.error('Görsel üretilirken hata oluştu:', error);
+      toast.error('Görsel üretilirken hata oluştu.', { id: 'imageGen' });
+    } finally {
+      toast.dismiss('imageGen');
+      setRegeneratingImage(false);
     }
   };
 
