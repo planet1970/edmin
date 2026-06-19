@@ -35,14 +35,6 @@ const initialMenuItems: { category: string; items: NavItem[] }[] = [
         ],
     },
     {
-        category: 'SOSYAL MEDYA',
-        items: [
-            { title: 'AI Post Oluşturucu', icon: Cpu, path: '/social-media/generator' },
-            { title: 'Hesap Tanımları', icon: Share2, path: '/social-media/accounts' },
-            { title: 'Gönderi Geçmişi', icon: History, path: '/social-media/posts' },
-        ],
-    },
-    {
         category: 'DATABASE',
         items: [
             { title: 'Database Tanım', icon: Database, path: '/database-definitions' },
