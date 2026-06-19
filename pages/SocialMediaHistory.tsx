@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { api } from '../services/api';
+import { api, getImageUrl } from '../services/api';
 import { toast } from 'react-hot-toast';
-import { Trash2, Send, Calendar, CheckCircle2, XCircle, AlertCircle, RefreshCw, Copy, ExternalLink, MessageSquare, Instagram, Facebook, Video } from 'lucide-react';
+import { Trash2, Send, Calendar, CheckCircle2, XCircle, AlertCircle, RefreshCw, Copy, ExternalLink, MessageSquare, Instagram, Facebook, Video, Eye, X } from 'lucide-react';
 
 interface Post {
   id: number;
@@ -23,6 +23,7 @@ const SocialMediaHistory: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [publishingId, setPublishingId] = useState<number | null>(null);
+  const [selectedPostForPreview, setSelectedPostForPreview] = useState<Post | null>(null);
 
   const fetchPosts = async (showLoadingSpinner = true) => {
     if (showLoadingSpinner) setLoading(true);
@@ -314,6 +315,14 @@ const SocialMediaHistory: React.FC = () => {
                         })()}
 
                         <button
+                          onClick={() => setSelectedPostForPreview(post)}
+                          className="p-1.5 hover:bg-gray-100 text-gray-400 hover:text-primary rounded-lg transition-colors"
+                          title="Önizle"
+                        >
+                          <Eye size={15} />
+                        </button>
+
+                        <button
                           onClick={() => handleDeletePost(post.id)}
                           className="p-1.5 hover:bg-red-50 text-gray-400 hover:text-red-600 rounded-lg transition-colors"
                           title="Sil"
@@ -326,6 +335,159 @@ const SocialMediaHistory: React.FC = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Post Preview Modal */}
+      {selectedPostForPreview && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-sm w-full max-h-[90vh] overflow-y-auto shadow-2xl relative border border-gray-100 flex flex-col">
+            {/* Modal Header */}
+            <div className="flex justify-between items-center px-5 py-4 border-b border-gray-100 shrink-0">
+              <h3 className="font-bold text-gray-800 flex items-center gap-2 text-sm">
+                <Eye className="text-primary" size={16} />
+                Gönderi Önizlemesi
+              </h3>
+              <button
+                onClick={() => setSelectedPostForPreview(null)}
+                className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-full transition-all"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-5 flex-1 overflow-y-auto flex items-center justify-center bg-gray-50/50">
+              {selectedPostForPreview.postType === 'STORY' ? (
+                /* Story Preview */
+                <div className="bg-[#121212] border border-gray-800 rounded-3xl overflow-hidden shadow-xl w-[260px] aspect-[9/16] relative text-white">
+                  {/* Media */}
+                  {selectedPostForPreview.videoUrl ? (
+                    <video src={getImageUrl(selectedPostForPreview.videoUrl)} autoPlay loop muted playsInline className="w-full h-full object-cover brightness-[0.8]" />
+                  ) : selectedPostForPreview.imageUrl ? (
+                    <img src={getImageUrl(selectedPostForPreview.imageUrl)} alt="Preview" className="w-full h-full object-cover brightness-[0.8]" />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-tr from-purple-800 via-pink-700 to-orange-500 flex items-center justify-center p-6 text-center">
+                      <p className="text-xs font-bold text-white">Medya Bulunamadı</p>
+                    </div>
+                  )}
+
+                  {/* Top Story Indicators */}
+                  <div className="absolute top-4 left-4 right-4 flex gap-1 z-10">
+                    <div className="h-0.5 flex-1 bg-white rounded-full"></div>
+                  </div>
+
+                  {/* Story User Header */}
+                  <div className="absolute top-7 left-4 right-4 flex items-center gap-2 z-10">
+                    <div className="w-5 h-5 rounded-full bg-orange-100 flex items-center justify-center text-primary text-[9px] font-bold">E</div>
+                    <span className="text-[10px] font-bold shadow-sm">@ednrehber</span>
+                  </div>
+
+                  {/* Bottom Story Message overlay - Warning about API restriction */}
+                  <div className="absolute bottom-6 left-4 right-4 bg-black/60 backdrop-blur-sm p-3 rounded-xl border border-red-500/10 text-center z-10">
+                    <p className="text-[9px] font-bold text-yellow-400">
+                      ⚠️ API Kısıtlaması
+                    </p>
+                    <p className="text-[8px] leading-relaxed text-gray-300 mt-1">
+                      Instagram API'si hikaye paylaşımlarında metin eklenmesini desteklemez. Hikayeniz sadece görsel/video olarak yayınlanmıştır/yayınlanacaktır.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                /* Feed Post Previews */
+                <div className="w-full">
+                  {selectedPostForPreview.platform === 'INSTAGRAM' && (
+                    <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-md max-w-[280px] mx-auto">
+                      {/* Header */}
+                      <div className="flex items-center justify-between p-3 border-b border-gray-100">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-full bg-orange-100 flex items-center justify-center text-primary text-xs font-bold">E</div>
+                          <div>
+                            <h4 className="text-[10px] font-bold text-gray-800">@ednrehber</h4>
+                            <p className="text-[8px] text-gray-400">Edirne, Türkiye</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Media */}
+                      <div className="aspect-square bg-gray-50 relative flex items-center justify-center overflow-hidden border-b border-gray-50">
+                        {selectedPostForPreview.videoUrl ? (
+                          <video src={getImageUrl(selectedPostForPreview.videoUrl)} controls autoPlay loop muted playsInline className="w-full h-full object-cover" />
+                        ) : selectedPostForPreview.imageUrl ? (
+                          <img src={getImageUrl(selectedPostForPreview.imageUrl)} alt="Preview" className="w-full h-full object-cover" />
+                        ) : (
+                          <p className="text-xs font-semibold text-gray-400 italic">Medya bulunamadı</p>
+                        )}
+                      </div>
+
+                      {/* Comments & Captions */}
+                      <div className="p-3 space-y-1 text-[10px]">
+                        <div>
+                          <span className="font-bold text-gray-800 mr-1.5">@ednrehber</span>
+                          <span className="text-gray-700 whitespace-pre-wrap">{selectedPostForPreview.caption}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedPostForPreview.platform === 'FACEBOOK' && (
+                    <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-md space-y-3 max-w-[300px] mx-auto">
+                      {/* Header */}
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">E</div>
+                        <div>
+                          <h4 className="text-[10px] font-bold text-gray-800 flex items-center gap-1">
+                            @ednrehber
+                            <span className="w-2.5 h-2.5 bg-blue-500 text-white rounded-full flex items-center justify-center text-[5px] font-bold">✓</span>
+                          </h4>
+                          <p className="text-[8px] text-gray-400">Dünya 🌎</p>
+                        </div>
+                      </div>
+
+                      {/* Caption */}
+                      <p className="text-[10px] text-gray-800 whitespace-pre-wrap leading-relaxed">
+                        {selectedPostForPreview.caption}
+                      </p>
+
+                      {/* Media */}
+                      <div className="aspect-video bg-gray-50 rounded-xl relative flex items-center justify-center overflow-hidden border border-gray-50">
+                        {selectedPostForPreview.videoUrl ? (
+                          <video src={getImageUrl(selectedPostForPreview.videoUrl)} controls autoPlay loop muted playsInline className="w-full h-full object-cover" />
+                        ) : selectedPostForPreview.imageUrl ? (
+                          <img src={getImageUrl(selectedPostForPreview.imageUrl)} alt="Preview" className="w-full h-full object-cover" />
+                        ) : (
+                          <p className="text-xs font-semibold text-gray-400 italic">Medya bulunamadı</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedPostForPreview.platform === 'TIKTOK' && (
+                    <div className="bg-[#121212] border border-gray-800 rounded-3xl overflow-hidden shadow-2xl aspect-[9/16] relative text-white w-[260px] mx-auto">
+                      {/* Background Media */}
+                      {selectedPostForPreview.videoUrl ? (
+                        <video src={getImageUrl(selectedPostForPreview.videoUrl)} autoPlay loop muted playsInline className="w-full h-full object-cover brightness-[0.7]" />
+                      ) : selectedPostForPreview.imageUrl ? (
+                        <img src={getImageUrl(selectedPostForPreview.imageUrl)} alt="Preview" className="w-full h-full object-cover brightness-[0.7]" />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-b from-black to-gray-900 flex items-center justify-center p-6">
+                          <p className="text-xs text-gray-400 italic">Medya bulunamadı</p>
+                        </div>
+                      )}
+
+                      {/* Bottom Details Overlay */}
+                      <div className="absolute bottom-6 left-4 right-14 space-y-2 z-10 text-left">
+                        <h4 className="font-bold text-xs">@ednrehber</h4>
+                        <p className="text-[9px] text-gray-200 line-clamp-3 whitespace-pre-wrap leading-relaxed">
+                          {selectedPostForPreview.caption}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
