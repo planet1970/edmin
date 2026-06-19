@@ -105,6 +105,7 @@ const SocialMediaGenerator: React.FC = () => {
         videoProvider,
         includeImage,
         includeVideo,
+        postType,
       });
 
       setGeneratedCaption(result.caption);
