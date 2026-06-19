@@ -384,14 +384,14 @@ const SocialMediaHistory: React.FC = () => {
                     <span className="text-[10px] font-bold shadow-sm">@ednrehber</span>
                   </div>
 
-                  {/* Bottom Story Message overlay - Warning about API restriction */}
-                  <div className="absolute bottom-6 left-4 right-4 bg-black/60 backdrop-blur-sm p-3 rounded-xl border border-red-500/10 text-center z-10">
-                    <p className="text-[9px] font-bold text-yellow-400">
-                      ⚠️ API Kısıtlaması
+                  {/* Bottom Story Message overlay - Showing text preview + baking note */}
+                  <div className="absolute bottom-6 left-4 right-4 bg-black/50 backdrop-blur-sm p-3 rounded-xl border border-white/10 text-left z-10">
+                    <p className="text-[10px] leading-relaxed line-clamp-4 text-white font-semibold">
+                      {selectedPostForPreview.caption}
                     </p>
-                    <p className="text-[8px] leading-relaxed text-gray-300 mt-1">
-                      Instagram API'si hikaye paylaşımlarında metin eklenmesini desteklemez. Hikayeniz sadece görsel/video olarak yayınlanmıştır/yayınlanacaktır.
-                    </p>
+                    <span className="block text-[7px] text-gray-300 font-bold mt-1.5 text-right">
+                      ✍️ Görsele otomatik yazılmıştır
+                    </span>
                   </div>
                 </div>
               ) : (

@@ -684,14 +684,14 @@ const SocialMediaGenerator: React.FC = () => {
                   <span className="text-[9px] text-gray-300">1s</span>
                 </div>
 
-                {/* Bottom Story Message overlay - Warning about API restriction */}
-                <div className="absolute bottom-6 left-4 right-4 bg-black/60 backdrop-blur-sm p-3 rounded-xl border border-red-500/20 text-center z-10">
-                  <p className="text-[10px] font-semibold text-yellow-400">
-                    ⚠️ API Kısıtlaması
+                {/* Bottom Story Message overlay - Showing text preview + baking note */}
+                <div className="absolute bottom-6 left-4 right-4 bg-black/50 backdrop-blur-sm p-3.5 rounded-xl border border-white/10 text-left z-10">
+                  <p className="text-[11px] leading-relaxed line-clamp-4 text-white font-semibold">
+                    {generatedCaption || "Hikaye içeriği AI tarafından üretildiğinde burada görüntülenecektir."}
                   </p>
-                  <p className="text-[9px] leading-relaxed text-gray-300 mt-1">
-                    Instagram API'si hikaye paylaşımlarında metin eklenmesini desteklemez. Hikayeniz sadece görsel/video olarak yayınlanacaktır.
-                  </p>
+                  <span className="block text-[8px] text-gray-300 font-bold mt-2 text-right">
+                    ✍️ Görsele otomatik yazılacaktır
+                  </span>
                 </div>
               </div>
             ) : (
