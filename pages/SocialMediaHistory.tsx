@@ -364,9 +364,9 @@ const SocialMediaHistory: React.FC = () => {
                 <div className="bg-[#121212] border border-gray-800 rounded-3xl overflow-hidden shadow-xl w-[260px] aspect-[9/16] relative text-white">
                   {/* Media */}
                   {selectedPostForPreview.videoUrl ? (
-                    <video src={getImageUrl(selectedPostForPreview.videoUrl)} autoPlay loop muted playsInline className="w-full h-full object-cover brightness-[0.8]" />
+                    <video key={selectedPostForPreview.videoUrl} src={getImageUrl(selectedPostForPreview.videoUrl)} autoPlay loop muted playsInline className="w-full h-full object-cover brightness-[0.8]" />
                   ) : selectedPostForPreview.imageUrl ? (
-                    <img src={getImageUrl(selectedPostForPreview.imageUrl)} alt="Preview" className="w-full h-full object-cover brightness-[0.8]" />
+                    <img key={selectedPostForPreview.imageUrl} src={getImageUrl(selectedPostForPreview.imageUrl)} alt="Preview" className="w-full h-full object-cover brightness-[0.8]" />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-tr from-purple-800 via-pink-700 to-orange-500 flex items-center justify-center p-6 text-center">
                       <p className="text-xs font-bold text-white">Medya Bulunamadı</p>
@@ -386,7 +386,7 @@ const SocialMediaHistory: React.FC = () => {
 
                   {/* Bottom Story Message overlay - Showing text preview + baking note */}
                   <div className="absolute bottom-6 left-4 right-4 bg-black/50 backdrop-blur-sm p-3 rounded-xl border border-white/10 text-left z-10">
-                    <p className="text-[10px] leading-relaxed line-clamp-4 text-white font-semibold">
+                    <p className="text-[10px] leading-relaxed text-white font-semibold">
                       {selectedPostForPreview.caption}
                     </p>
                     <span className="block text-[7px] text-gray-300 font-bold mt-1.5 text-right">

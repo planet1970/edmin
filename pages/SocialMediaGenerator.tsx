@@ -661,9 +661,9 @@ const SocialMediaGenerator: React.FC = () => {
               <div className="bg-[#121212] border border-gray-800 rounded-3xl overflow-hidden shadow-2xl max-w-[280px] mx-auto aspect-[9/16] relative text-white">
                 {/* Media */}
                 {includeVideo && videoUrl ? (
-                  <video src={getImageUrl(videoUrl)} autoPlay loop muted playsInline className="w-full h-full object-cover brightness-[0.8]" />
+                  <video key={videoUrl} src={getImageUrl(videoUrl)} autoPlay loop muted playsInline className="w-full h-full object-cover brightness-[0.8]" />
                 ) : imageUrl ? (
-                  <img src={getImageUrl(imageUrl)} alt="Preview" className="w-full h-full object-cover brightness-[0.8]" />
+                  <img key={imageUrl} src={getImageUrl(imageUrl)} alt="Preview" className="w-full h-full object-cover brightness-[0.8]" />
                 ) : (
                   <div className="w-full h-full bg-gradient-to-tr from-purple-800 via-pink-700 to-orange-500 flex items-center justify-center p-6 text-center">
                     <div className="space-y-3">
@@ -687,7 +687,7 @@ const SocialMediaGenerator: React.FC = () => {
 
                 {/* Bottom Story Message overlay - Showing text preview + baking note */}
                 <div className="absolute bottom-6 left-4 right-4 bg-black/50 backdrop-blur-sm p-3.5 rounded-xl border border-white/10 text-left z-10">
-                  <p className="text-[11px] leading-relaxed line-clamp-4 text-white font-semibold">
+                  <p className="text-[11px] leading-relaxed text-white font-semibold">
                     {generatedCaption || "Hikaye içeriği AI tarafından üretildiğinde burada görüntülenecektir."}
                   </p>
                   <span className="block text-[8px] text-gray-300 font-bold mt-2 text-right">
@@ -721,9 +721,9 @@ const SocialMediaGenerator: React.FC = () => {
                     {/* Main Media */}
                     <div className="aspect-square bg-gray-100 relative flex items-center justify-center overflow-hidden border-b border-gray-50">
                       {includeVideo && videoUrl ? (
-                        <video src={getImageUrl(videoUrl)} controls autoPlay loop muted playsInline className="w-full h-full object-cover" />
+                        <video key={videoUrl} src={getImageUrl(videoUrl)} controls autoPlay loop muted playsInline className="w-full h-full object-cover" />
                       ) : imageUrl ? (
-                        <img src={getImageUrl(imageUrl)} alt="Preview" className="w-full h-full object-cover" />
+                        <img key={imageUrl} src={getImageUrl(imageUrl)} alt="Preview" className="w-full h-full object-cover" />
                       ) : (
                         <div className="text-center p-6 space-y-2">
                           <ImageIcon className="mx-auto text-gray-300 animate-pulse" size={42} />
@@ -783,9 +783,9 @@ const SocialMediaGenerator: React.FC = () => {
                     {/* Image Block */}
                     <div className="aspect-video bg-gray-100 rounded-xl relative flex items-center justify-center overflow-hidden border border-gray-50">
                       {includeVideo && videoUrl ? (
-                        <video src={getImageUrl(videoUrl)} controls autoPlay loop muted playsInline className="w-full h-full object-cover" />
+                        <video key={videoUrl} src={getImageUrl(videoUrl)} controls autoPlay loop muted playsInline className="w-full h-full object-cover" />
                       ) : imageUrl ? (
-                        <img src={getImageUrl(imageUrl)} alt="Preview" className="w-full h-full object-cover" />
+                        <img key={imageUrl} src={getImageUrl(imageUrl)} alt="Preview" className="w-full h-full object-cover" />
                       ) : (
                         <div className="text-center p-6">
                           <ImageIcon className="mx-auto text-gray-300 animate-pulse mb-1" size={36} />
@@ -826,9 +826,9 @@ const SocialMediaGenerator: React.FC = () => {
                   <div className="bg-[#121212] border border-gray-800 rounded-3xl overflow-hidden shadow-2xl max-w-[280px] mx-auto aspect-[9/16] relative text-white">
                     {/* Background Video/Image Mock */}
                     {includeVideo && videoUrl ? (
-                      <video src={getImageUrl(videoUrl)} autoPlay loop muted playsInline className="w-full h-full object-cover brightness-[0.7]" />
+                      <video key={videoUrl} src={getImageUrl(videoUrl)} autoPlay loop muted playsInline className="w-full h-full object-cover brightness-[0.7]" />
                     ) : imageUrl ? (
-                      <img src={getImageUrl(imageUrl)} alt="Preview" className="w-full h-full object-cover brightness-[0.7]" />
+                      <img key={imageUrl} src={getImageUrl(imageUrl)} alt="Preview" className="w-full h-full object-cover brightness-[0.7]" />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-b from-black via-gray-900 to-black flex items-center justify-center p-6 text-center">
                         <div className="space-y-3">
