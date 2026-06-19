@@ -433,28 +433,67 @@ const SocialMediaGenerator: React.FC = () => {
                 </div>
               )}
 
-              {/* Custom Image Upload or Stock selection */}
+              {/* Custom Image Upload or Stock selection & Regeneration */}
               {includeImage && (
-                <div className="space-y-2">
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Gönderi Görseli</label>
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="text"
-                      value={imageUrl}
-                      onChange={(e) => setImageUrl(e.target.value)}
-                      placeholder="Görsel URL (veya boş bırakabilirsiniz)"
-                      className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-primary text-xs"
-                    />
-                    <button
-                      onClick={() => {
-                        setImageUrl(`https://images.unsplash.com/photo-1564507592333-c60657eea523?auto=format&fit=crop&w=800&q=80`);
-                        toast.success('Örnek görsel yüklendi.');
-                      }}
-                      className="flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-3 py-2.5 rounded-xl text-xs transition-colors"
-                    >
-                      <ImageIcon size={14} />
-                      Örnekle
-                    </button>
+                <div className="space-y-4 border-t border-gray-100 pt-4">
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Gönderi Görseli</label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="text"
+                        value={imageUrl}
+                        onChange={(e) => setImageUrl(e.target.value)}
+                        placeholder="Görsel URL (veya boş bırakabilirsiniz)"
+                        className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-primary text-xs font-medium"
+                      />
+                      <button
+                        onClick={() => {
+                          setImageUrl(`https://images.unsplash.com/photo-1564507592333-c60657eea523?auto=format&fit=crop&w=800&q=80`);
+                          toast.success('Örnek görsel yüklendi.');
+                        }}
+                        className="flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-3 py-2.5 rounded-xl text-xs transition-colors"
+                      >
+                        <ImageIcon size={14} />
+                        Örnekle
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Image Regeneration Panel */}
+                  <div className="bg-orange-50/20 border border-orange-100/50 p-4 rounded-xl space-y-3 animate-fadeIn">
+                    <div className="flex items-center gap-2">
+                      <RefreshCw size={14} className={`text-primary ${regeneratingImage ? 'animate-spin' : 'animate-pulse'}`} />
+                      <span className="text-xs font-bold text-gray-700">Görseli Beğenmediniz mi?</span>
+                    </div>
+                    <p className="text-[11px] text-gray-500 leading-relaxed">
+                      Oluşturulan resmi beğenmediyseniz, yapay zekaya düzeltme veya revizyon komutları vererek yeni bir resim üretebilirsiniz.
+                    </p>
+                    <div className="flex flex-col md:flex-row gap-2">
+                      <input
+                        type="text"
+                        value={imageFeedback}
+                        onChange={(e) => setImageFeedback(e.target.value)}
+                        placeholder="Düzeltme komutu (Örn: Daha karanlık olsun, insan figürü olmasın...)"
+                        className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-xs focus:outline-none focus:border-primary"
+                      />
+                      <button
+                        onClick={handleRegenerateImage}
+                        disabled={regeneratingImage || !generatedImagePrompt}
+                        className="flex items-center justify-center gap-1.5 bg-primary hover:bg-orange-600 text-white text-xs font-bold px-4 py-2 rounded-lg transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                      >
+                        {regeneratingImage ? (
+                          <>
+                            <RefreshCw className="animate-spin" size={12} />
+                            Yeniden Üretiliyor...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles size={12} />
+                            Görseli Yeniden Üret
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
