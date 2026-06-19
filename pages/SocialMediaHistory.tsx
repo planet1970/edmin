@@ -385,11 +385,11 @@ const SocialMediaHistory: React.FC = () => {
                   </div>
 
                   {/* Bottom Story Message overlay - Showing text preview + baking note */}
-                  <div className="absolute bottom-6 left-4 right-4 bg-black/50 backdrop-blur-sm p-3 rounded-xl border border-white/10 text-left z-10">
-                    <p className="text-[10px] leading-relaxed text-white font-semibold">
+                  <div className="absolute bottom-[16%] left-1/2 -translate-x-1/2 w-[72%] bg-black/65 backdrop-blur-sm p-3.5 rounded-xl border border-white/10 text-center z-10">
+                    <p className="text-[9px] leading-relaxed text-white font-semibold whitespace-pre-wrap">
                       {selectedPostForPreview.caption}
                     </p>
-                    <span className="block text-[7px] text-gray-300 font-bold mt-1.5 text-right">
+                    <span className="block text-[7px] text-gray-300 font-bold mt-1.5 text-center">
                       ✍️ Görsele otomatik yazılmıştır
                     </span>
                   </div>
